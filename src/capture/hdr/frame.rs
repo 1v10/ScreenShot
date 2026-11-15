@@ -89,7 +89,7 @@ pub fn open_duplication(out: &HdrOutput) -> Result<IDXGIOutputDuplication, Strin
 /// （`LastPresentTime != 0`），取不到就重试到上限后返回 `None`；复用会话的后续帧为 `false` ——
 /// 桌面无变化（`WAIT_TIMEOUT` 或只有指针更新）时立即返回 `None`，交给上层当作「静止」。
 pub fn acquire(out: &HdrOutput, dup: &IDXGIOutputDuplication, need_frame: bool) -> Result<Option<Frame>, GrabError> {
-    let timing = std::env::var_os("AIRSNIP_TIMING").is_some();
+    let timing = std::env::var_os("SCREENTRANS_TIMING").is_some();
     let t_all = std::time::Instant::now();
     unsafe {
         let timeout = if need_frame {
@@ -163,7 +163,7 @@ pub fn acquire(out: &HdrOutput, dup: &IDXGIOutputDuplication, need_frame: bool) 
             let t = std::time::Instant::now();
             let v = tonemap(data, pitch, w, h, out.color.sdr_white_nits);
             if timing {
-                eprintln!("[airsnip] HDR 色调映射 {:?}", t.elapsed());
+                eprintln!("[screentrans] HDR 色调映射 {:?}", t.elapsed());
             }
             v
         } else {
@@ -172,7 +172,7 @@ pub fn acquire(out: &HdrOutput, dup: &IDXGIOutputDuplication, need_frame: bool) 
         out.context.Unmap(&staging, 0);
         let _ = dup.ReleaseFrame();
         if timing {
-            eprintln!("[airsnip] HDR 抓帧总耗时 {:?}", t_all.elapsed());
+            eprintln!("[screentrans] HDR 抓帧总耗时 {:?}", t_all.elapsed());
         }
 
         Ok(Some(Frame {

@@ -8,7 +8,6 @@ pub mod autostart;
 pub mod filedlg;
 pub(crate) mod hotkey;
 pub(crate) mod mouse;
-pub mod open;
 mod pin_edit;
 pub mod popmenu;
 mod tray;
@@ -26,8 +25,8 @@ use crate::settings::Config;
 use wndproc::create_message_window;
 
 /// 消息窗口类名（`FindWindowW` 唤起已有实例时用到）。
-pub const WINDOW_CLASS: PCWSTR = w!("airsnip.hidden");
-const MUTEX_NAME: PCWSTR = w!("Local\\airsnip.single.instance");
+pub const WINDOW_CLASS: PCWSTR = w!("screentrans.hidden");
+const MUTEX_NAME: PCWSTR = w!("Local\\screentrans.single.instance");
 const WM_TRAY: u32 = WM_APP + 1;
 const WM_ACTIVATE: u32 = WM_APP + 2; // 单实例唤起已有实例
 /// 覆盖层线程 → 主窗口：贴图载荷（GlobalAlloc: u32 w + u32 h + RGBA）（PIN-1）。
@@ -59,12 +58,6 @@ pub const IDM_SHOT: usize = 40001;
 pub const IDM_PIN: usize = 40002;
 pub const IDM_SETTINGS: usize = 40003;
 pub const IDM_EXIT: usize = 40004;
-
-/// 启动后延迟检查更新的定时器 id（SYS-7）：一次性触发后立即 KillTimer，不常驻轮询。
-pub const TIMER_UPDATE_CHECK: usize = 0x7B01;
-
-/// 启动后延迟多久才检查更新（毫秒）：错开热键/托盘初始化，不影响启动耗时。
-const UPDATE_CHECK_DELAY_MS: u32 = 3_000;
 
 /// 应用运行时状态。
 pub struct App {
@@ -116,16 +109,8 @@ pub fn run() -> i32 {
     app.register_hotkeys();
     // 鼠标键热键（SYS-2，ADR 0019）：RegisterHotKey 不支持，改订阅 Raw Input
     mouse::install(hwnd, mouse::wanted(&app.config.hotkey));
-    // 更新检查的后台线程要通知主窗口弹气泡（SYS-7）
-    crate::update::notify::register_main(hwnd);
     // 贴图内边框快捷键（M2b，非全局热键：仅贴图窗口聚焦时生效）
     crate::pin::set_border_key(app.config.hotkey.border_key, app.config.hotkey.border_modifiers);
-    // 启动后延迟检查更新（SYS-7）：一次性定时器，不引入常驻轮询（其他性能红线不变）
-    if app.config.auto_check_update {
-        unsafe {
-            SetTimer(Some(hwnd), TIMER_UPDATE_CHECK, UPDATE_CHECK_DELAY_MS, None);
-        }
-    }
 
     unsafe {
         let mut msg = MSG::default();
@@ -174,7 +159,7 @@ pub fn icon_resource() -> PCWSTR {
 /// `owner` 为 None 时使用当前活动窗口；`flags` 为 MB_* 组合。
 pub fn message_box(owner: Option<HWND>, text: &str, flags: MESSAGEBOX_STYLE) {
     let ws: Vec<u16> = text.encode_utf16().chain([0]).collect();
-    unsafe { MessageBoxW(owner, PCWSTR(ws.as_ptr()), w!("AirSnip"), flags) };
+    unsafe { MessageBoxW(owner, PCWSTR(ws.as_ptr()), w!("ScreenTrans"), flags) };
 }
 
 /// 将字符串写入固定长度 u16 数组（用于 NOTIFYICONDATAW.szTip 等）。

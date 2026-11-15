@@ -74,9 +74,9 @@ impl Overlay {
             let cand_ok = ImmSetCandidateWindow(ctx, &candidate).as_bool();
             let comp_ok = ImmSetCompositionWindow(ctx, &composition).as_bool();
             let _ = ImmReleaseContext(self.hwnd, ctx);
-            if std::env::var_os("AIRSNIP_DEBUG").is_some() {
+            if std::env::var_os("SCREENTRANS_DEBUG").is_some() {
                 // 输入法「不跟随」的回报全靠这行定位：坐标是客户区，需与现实光标对比
-                eprintln!("[airsnip] IME 锚点=({x},{y}) 候选框={cand_ok} 组合串={comp_ok}");
+                eprintln!("[screentrans] IME 锚点=({x},{y}) 候选框={cand_ok} 组合串={comp_ok}");
             }
         }
     }

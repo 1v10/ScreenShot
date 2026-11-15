@@ -102,6 +102,7 @@ fn create_format(f: &IDWriteFactory, spec: &FontSpec) -> Option<IDWriteTextForma
         )
     }
     .ok()
+    .inspect(|format| super::text_ui::apply(format, spec))
 }
 
 /// 测量文本尺寸（物理像素，单行）。失败时给估算值。

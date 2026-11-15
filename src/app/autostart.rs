@@ -5,9 +5,9 @@
 use windows::Win32::System::LibraryLoader::GetModuleFileNameW;
 
 /// 任务计划名称。
-const TASK_NAME: &str = "airsnip";
+const TASK_NAME: &str = "screentrans";
 
-/// 开机自启是否启用（SYS-4）：任务计划中存在 "airsnip" 任务。
+/// 开机自启是否启用（SYS-4）：任务计划中存在 "screentrans" 任务。
 pub fn autostart_enabled() -> bool {
     run_schtasks(&["/Query", "/TN", TASK_NAME])
 }

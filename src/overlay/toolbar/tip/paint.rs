@@ -31,7 +31,7 @@ const MARGIN_BASE: f32 = 4.0;
 /// 按钮的垂直参照是**整条工具栏**而非按钮所在行：贴行内会被第二行的字体控件挡住（ADR 0020）。
 /// 圆角控制柄没有工具栏可言，水平与垂直都参照手柄自身。
 pub(crate) fn bubble_rect(anchor: SelRect, vertical: SelRect, text: &str, vw: i32, vh: i32, ui: Ui) -> SelRect {
-    let spec = FontSpec::new(ui.f(FONT_BASE));
+    let spec = FontSpec::ui(ui.f(FONT_BASE));
     let (tw, th) = dwrite::measure(text, &spec);
     let (pad_x, pad_y) = (ui.f(PAD_X_BASE), ui.f(PAD_Y_BASE));
     let w = (tw + pad_x * 2.0).ceil() as i32;
@@ -53,7 +53,7 @@ pub(crate) fn draw(pixmap: &mut Pixmap, bubble: &Bubble, p: &Palette, ui: Ui) {
     // 背景改不透明：半透明底叠在暗图上会让小字发灰
     let bg = [p.bg[0], p.bg[1], p.bg[2], 255];
     rounded_rect(pixmap, bubble.rect, ui.f(RADIUS_BASE), bg, Some(p.border));
-    let spec = FontSpec::new(ui.f(FONT_BASE));
+    let spec = FontSpec::ui(ui.f(FONT_BASE));
     let (tw, th) = dwrite::measure(&bubble.text, &spec);
     let x = bubble.rect.x as f32 + (bubble.rect.w as f32 - tw) / 2.0;
     let y = bubble.rect.y as f32 + (bubble.rect.h as f32 - th) / 2.0;

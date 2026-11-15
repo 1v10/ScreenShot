@@ -35,8 +35,6 @@ pub const GRID_GAP: i32 = 8;
 pub const CELLPAD: i32 = 16;
 /// 悬停高亮矩形相对内容外扩的距离（让高亮四周留出余量，不再紧贴控件）。
 pub const HOVER_PAD: i32 = 8;
-/// 支持项目行高度（文案 + 赞赏码，高于标准行）。
-pub const QR_ROW_H: i32 = 200;
 /// 「工具栏」页的组头行高度（比标准行矮，五组标题不占太多竖向空间）。
 /// ADR 0036 从 26 收到 24：工具组多了一个「移动」按钮（ 11 个 / 5 列 = 3 行），
 /// 页脚提示与最后一排开关之间的呼吸空间只剩 2px，靠这 10px 补回。
@@ -59,17 +57,15 @@ pub enum Section {
     Hotkeys,
     Save,
     Appearance,
-    About,
 }
 
 impl Section {
-    pub const ALL: [Section; 6] = [
+    pub const ALL: [Section; 5] = [
         Section::General,
         Section::Toolbar,
         Section::Hotkeys,
         Section::Save,
         Section::Appearance,
-        Section::About,
     ];
 
     pub fn title(self) -> &'static str {
@@ -79,7 +75,6 @@ impl Section {
             Section::Hotkeys => "快捷键",
             Section::Save => "保存",
             Section::Appearance => "外观",
-            Section::About => "关于",
         }
     }
 }
@@ -156,18 +151,6 @@ pub enum RowId {
     NameTimestamp,
     /// 文件名模板：仅日期（OUT-2）。
     NameDate,
-    /// 关于（版本与许可）。
-    About,
-    /// 项目地址（关于页，点击用浏览器打开）。
-    Repo,
-    /// 第三方组件声明入口（M5，PRD §9）。
-    Licenses,
-    /// 检查更新（SYS-7）：右侧显示当前更新状态，整行可点。
-    CheckUpdate,
-    /// 启动时自动检查更新开关（SYS-7）。
-    AutoCheckUpdate,
-    /// 支持项目（关于页：文案 + 微信赞赏码）。
-    Reward,
     /// 工具栏元素显隐开关（EDT-16）：一个元素一行（多列排布）。
     Toolbar(ToolbarSlot),
     /// 工具栏组头（EDT-16）：整组全显 / 全隐，部分可见时半选。
@@ -187,14 +170,8 @@ pub enum RowKind {
     Radio,
     /// 只读：左侧标签 + 右侧说明文本。
     Readonly,
-    /// 关于块：左侧产品名、右侧版本与许可。
-    About,
-    /// 外部链接：右侧强调色文字，点击用浏览器打开。
-    Link,
-    /// 状态行：右侧按钮（文案随状态变，忙时置灰），整行可点。
+    /// 操作按钮（恢复默认快捷键），按按钮边界命中。
     Button,
-    /// 支持项目块：高行（左侧文案 + 右侧赞赏码）。
-    Qr,
 }
 
 /// 布局项：导航项或内容行。
@@ -360,14 +337,6 @@ mod tests {
                     RowId::UiScale175,
                     RowId::UiScale200,
                 ],
-                Section::About => vec![
-                    RowId::About,
-                    RowId::Repo,
-                    RowId::Licenses,
-                    RowId::CheckUpdate,
-                    RowId::AutoCheckUpdate,
-                    RowId::Reward,
-                ],
                 Section::Toolbar => {
                     // 组头 + 组内每个元素各一行（顺序即界面顺序，EDT-16）
                     let mut rows = Vec::new();
@@ -433,21 +402,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn about_reward_row_is_taller_than_standard() {
-        let l = layout(Section::About, 1.0);
-        let reward = l
-            .items
-            .iter()
-            .find_map(|i| match i {
-                Item::Row(r) if r.id == RowId::Reward => Some(r),
-                _ => None,
-            })
-            .expect("关于页应有支持项目行");
-        assert_eq!(reward.rect.h, QR_ROW_H, "赞赏码行高度应为 QR_ROW_H");
-        assert_eq!(reward.control.h, QR_ROW_H, "控件区高度应与行一致");
-    }
-
     /// 「工具栏」页单元格必须容得下「标签 + 开关」（5 列很窄，标签太长会压到开关上）。
     /// 用真实字体量宽，改标签或改列数时能当场报错；每档缩放都查（单元格宽是整除，
     /// 余数随缩放变化，1.0 下放得下不等于 1.5 下也放得下）。
@@ -461,7 +415,7 @@ mod tests {
                 let Item::Row(r) = item else { continue };
                 let RowId::Toolbar(slot) = r.id else { continue };
                 cells += 1;
-                let spec = crate::render::text::FontSpec::new(16.0 * scale);
+                let spec = crate::render::text::FontSpec::ui(16.0 * scale);
                 let (label_w, _) = crate::render::text::measure(slot.label(), &spec);
                 let avail = (r.control.x - (r.rect.x + r.label_pad)) as f32;
                 assert!(

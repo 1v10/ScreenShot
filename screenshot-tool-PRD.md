@@ -51,7 +51,7 @@
 | SYS-4 | 开机自启：通过任务计划程序创建登录时最高权限运行的任务（程序始终以管理员运行，Run 键无法启动提权程序，见 ADR 0003），设置面板内开关 | P0 |
 | SYS-5 | 配置存储于 `%APPDATA%`，TOML 格式，损坏时回退默认值 | P0 |
 | SYS-6 | 主题跟随系统：读取 `AppsUseLightTheme`；设置面板监听 `WM_SETTINGCHANGE("ImmersiveColorSet")`，并辅以注册表通知（`RegNotifyChangeKeyValue`，事件驱动非轮询）——管理员进程可能被 UIPI 挡住用户级进程的主题广播；切换时刷新面板配色与标题栏，覆盖层工具栏在每次打开时按当前主题解析 | P0 |
-| SYS-7 | 自动更新：启动后静默检查（一次性定时器，不引入常驻轮询），清单与安装包优先走加速镜像、GitHub 直连兜底；清单用 ed25519 签名（版本号参与签名，防篡改与降级），下载时边下边算 SHA-256；校验通过后由独立脚本替换 exe 并重启。「关于」页显示版本状态并可手动检查 / 一键更新，可关闭启动自动检查 | P1 |
+| SYS-7 | 已撤销：删除关于页、启动自动检查、手动检查及下载安装更新；升级由用户手动替换程序（ADR 0040） | — |
 
 ### 4.2 截图与选区
 
@@ -149,7 +149,6 @@
 | 截图 | 文件命名模板（日期+时间 / Unix 毫秒时间戳 / 仅日期）；保存路径与格式在系统「另存为」对话框中选择；是否自动复制、窗口吸附开关 |
 | 编辑 | 各工具默认颜色 / 线宽 / 字体 |
 | 外观 | 主题：跟随系统 / 浅色 / 深色；界面缩放（自动 / 100%～200%，见 ADR 0016）；界面字体（默认 Microsoft YaHei UI） |
-| 关于 | 版本号、开源许可 |
 
 ## 5. 二期需求
 
@@ -277,9 +276,15 @@ theme/      系统主题检测与调色板
 ## 9. 开源与许可
 - 项目开源，协议确定为 **GPL-3.0-only**。
 - 仓库根目录放置 `LICENSE`（GPL-3.0 全文），源文件头标注 `SPDX-License-Identifier: GPL-3.0-only`；发布二进制时同时提供对应源码的获取方式。
-- 当前依赖（windows-rs、tiny-skia、png、image-webp、jpeg-encoder 等 98 个 crate）均为宽松许可证（MIT / Apache-2.0 / BSD / Zlib / 0BSD / Unlicense / Unicode-3.0 / IJG），与 GPL-3.0 兼容。已实装：根目录 `deny.toml` + `cargo deny check`（许可证 / 安全公告 / 来源 / 重复版本四类检查，全绿）；`THIRD-PARTY.md` 由 `scripts/gen-third-party.ps1` 从 `cargo metadata` 生成；设置面板「关于」页提供「第三方许可 → 查看清单」入口（浏览器打开仓库中的声明）。
+- 当前依赖（windows-rs、tiny-skia、png、image-webp、jpeg-encoder 等 98 个 crate）均为宽松许可证（MIT / Apache-2.0 / BSD / Zlib / 0BSD / Unlicense / Unicode-3.0 / IJG），与 GPL-3.0 兼容。已实装：根目录 `deny.toml` + `cargo deny check`（许可证 / 安全公告 / 来源 / 重复版本四类检查，全绿）；`THIRD-PARTY.md` 由 `scripts/gen-third-party.ps1` 从 `cargo metadata` 生成；第三方许可保留在发布包 THIRD-PARTY.md；关于页及其在线入口已移除（ADR 0040）。
 - 后续引入新依赖须确认与 GPL-3.0 兼容（MIT、BSD、Apache-2.0 兼容；仅限 GPL-2.0-only 的代码不兼容）。
 - 若接受外部贡献，需在仓库中明确贡献协议（如 DCO 或 CLA）。
 
 ## 10. 待确认问题
 暂无。已确认事项：开源协议为 GPL-3.0-only；长截图内嵌滚动区域一期采用「手动框选视口」（LNG-11），自动识别（LNG-12、LNG-13）放二期；OCR 与翻译已撤销（ADR 0035），对应需求编号仅作追溯。
+
+当前行为修订（ADR 0040）：截图与贴图编辑初始化默认选择首个可见颜色；全部色块隐藏时选择颜色 1。关于页、赞赏入口、项目链接及自动更新功能已撤销。
+
+界面字体（SYS-3 / ADR 0041）：Segoe UI 优先，缺字时依次回退 Microsoft YaHei 和系统字体，与 ScreenTrans 保持相同字体顺序；标注对象字体独立可选。
+
+命名与发布（SYS-1/4/5，ADR 0042）：当前软件名 ScreenTrans，程序 ScreenTrans.exe，配置 %APPDATA%\screentrans；兼容读取旧 AirSnip 配置。Actions 自动构建 Windows x64 产物，用户推送与 Cargo 版本一致的 v* tag 后自动发布；tag 与远程 Git 操作由用户执行。历史需求中的 AirSnip 为上游旧名。

@@ -8,8 +8,8 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::{PCWSTR, w};
 
 use super::{
-    App, TIMER_UPDATE_CHECK, WINDOW_CLASS, WM_OVERLAY_DONE, WM_PIN_BORDER_CHANGED, WM_PIN_EDIT_DONE,
-    WM_PIN_EDIT_REQUEST, WM_PIN_FROM_EDITOR, WM_PIN_SAVE_REQUEST, WM_TRAY, icon_resource, tray,
+    App, WINDOW_CLASS, WM_OVERLAY_DONE, WM_PIN_BORDER_CHANGED, WM_PIN_EDIT_DONE, WM_PIN_EDIT_REQUEST,
+    WM_PIN_FROM_EDITOR, WM_PIN_SAVE_REQUEST, WM_TRAY, icon_resource, tray,
 };
 
 /// 注册消息窗口类并创建窗口（隐藏）。
@@ -34,7 +34,7 @@ pub(super) fn create_message_window(hinstance: HINSTANCE) -> Result<HWND, String
         let hwnd = match CreateWindowExW(
             WINDOW_EX_STYLE(0),
             WINDOW_CLASS,
-            w!("AirSnip"),
+            w!("ScreenTrans"),
             WINDOW_STYLE(0),
             0,
             0,
@@ -69,8 +69,8 @@ pub(super) fn create_message_window(hinstance: HINSTANCE) -> Result<HWND, String
 /// UIPI 放行失败只在调试时提示：失败不致命，仅退化为「收不到 explorer 的低权限消息」。
 fn log_uipi_failure(name: &str, result: windows::core::Result<()>) {
     if let Err(e) = result {
-        if std::env::var_os("AIRSNIP_DEBUG").is_some() {
-            eprintln!("[airsnip] UIPI 放行 {name} 失败：{e:?}");
+        if std::env::var_os("SCREENTRANS_DEBUG").is_some() {
+            eprintln!("[screentrans] UIPI 放行 {name} 失败：{e:?}");
         }
     }
 }
@@ -89,16 +89,6 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             // 这里不能走 restore_tray：计数被清零会变成无限重试。
             if let Some(app) = app_from(hwnd) {
                 app.ensure_tray();
-            }
-            LRESULT(0)
-        }
-        WM_TIMER if wparam.0 == TIMER_UPDATE_CHECK => {
-            // 启动后一次性检查更新（SYS-7）：立刻停掉定时器，不留常驻轮询
-            unsafe {
-                let _ = KillTimer(Some(hwnd), TIMER_UPDATE_CHECK);
-            }
-            if let Some(app) = app_from(hwnd) {
-                app.check_update_silently();
             }
             LRESULT(0)
         }
@@ -148,7 +138,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
                 && let Some(vk) = crate::app::mouse::pressed_vk(lparam)
             {
                 if crate::app::mouse::debug_enabled() {
-                    eprintln!("[airsnip] WM_INPUT 鼠标键 vk={vk:#x}");
+                    eprintln!("[screentrans] WM_INPUT 鼠标键 vk={vk:#x}");
                 }
                 app.handle_mouse_hotkey(vk);
             }
@@ -231,18 +221,6 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             // 贴图窗口内快捷键切了边框：更新默认配置（M2b）
             if let Some(app) = app_from(hwnd) {
                 app.toggle_pin_border();
-            }
-            LRESULT(0)
-        }
-        crate::update::notify::WM_UPDATE_FOUND => {
-            // 后台检查发现新版本（SYS-7）：弹托盘气泡，设置面板关于页可看详情
-            if let Some(app) = app_from(hwnd)
-                && let crate::update::state::Phase::Available { version } = crate::update::state::phase()
-            {
-                app.balloon(
-                    "AirSnip 有新版本",
-                    &format!("v{version} 已发布，点托盘图标打开设置更新"),
-                );
             }
             LRESULT(0)
         }

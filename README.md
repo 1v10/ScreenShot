@@ -1,11 +1,11 @@
-# AirSnip（轻截）
+# ScreenTrans
 
 **2 MB 以内的 Windows 截图标注工具。** 待机不占 CPU、常驻内存个位数 MB、按热键 0.1 秒级出画面——
 标注、二次编辑、长截图、贴图、多格式另存，功能一样不少。
 
 > 纯 CPU 渲染，不依赖 GPU、不套 Electron、不装运行时。解压即用的绿色单文件，在核显迷你主机、虚拟机、远程桌面里同样流畅。
 
-![AirSnip 截图覆盖层：冻结屏幕、框选区域、底部标注工具栏](assets/hero.webp)
+![ScreenTrans 截图覆盖层：冻结屏幕、框选区域、底部标注工具栏](assets/hero.webp)
 
 *按 `F1` 后的样子：屏幕冻结、框选区域，底部一行就是全部标注工具。图中选中了一个矩形标注（可拖动 / 改色 / 删除），另有一条箭头。*
 
@@ -22,7 +22,7 @@
 > 截图会话期间会按屏幕大小临时分配位图（1440p 约 15 MB），退出覆盖层立即释放——不截图时它几乎不占资源。
 > 以上为上限口径（不会随每次发版漂移）；精确数值与测量方法见 `docs/perf-m5.md`。
 
-**为什么能这么小：** 没有 Electron / WebView / .NET 运行时，界面与标注全部由 Rust 直接绘制（tiny-skia 矢量栅格化 + DirectWrite 文字），抓屏走 GDI BitBlt，常驻部分只做「等热键」一件事。不少同类工具自带运行时或基于 Electron，安装包在数十至上百 MB、常驻内存数百 MB 量级——AirSnip 把安装包压到 2 MB 以内、常驻内存压到 1 MB 量级。
+**为什么能这么小：** 没有 Electron / WebView / .NET 运行时，界面与标注全部由 Rust 直接绘制（tiny-skia 矢量栅格化 + DirectWrite 文字），抓屏走 GDI BitBlt，常驻部分只做「等热键」一件事。不少同类工具自带运行时或基于 Electron，安装包在数十至上百 MB、常驻内存数百 MB 量级——ScreenTrans 把安装包压到 2 MB 以内、常驻内存压到 1 MB 量级。
 
 ## 适合谁
 
@@ -39,7 +39,7 @@
   要画标注先点工具栏的工具（或按 `1`–`0`），画完想回去挪框点「移动」或按 `V`
 - 选区内空白处双击 = 复制完成，一步到位（可在设置里改成「贴到屏幕」）
 - 截图过程中按 `Shift+F1` = **再次截图**：当前画面（含工具栏、选区与已有标注）当作新底图重新框选，
-  用来截 AirSnip 自己的界面；该键只在截图期间生效，可在设置面板改。
+  用来截 ScreenTrans 自己的界面；该键只在截图期间生效，可在设置面板改。
   注意：已有的标注会被拍进新底图变成像素，不再可编辑（不可撤销）
 - 多显示器与负坐标布局正确（Per-Monitor V2 感知；混合 DPI 见「已知限制」）
 
@@ -69,6 +69,7 @@
 - 平移选区（拖动或方向键）时标注一起跟随，拖手柄缩放只改裁剪范围
 - 选中后按 `Del` / `Backspace` 只删这一个标注，`Ctrl+Z` 一步恢复，不连带撤销其它标注
 - 鼠标在工具栏按钮上停约 0.4 秒，弹出「名称 · 快捷键」悬浮提示（改键后跟着变）
+- 每次截图默认选择工具栏第一个可见色块（预设颜色 1 为白色）；全部隐藏时使用颜色 1
 - 颜色与填充实时作用于选中对象，不用重画；线宽 / 模糊强度 / 字号用滚轮调，同样作用于选中对象
 - `Shift` 约束：新建时正方形、箭头方向吸附，编辑时轴向锁定、等比缩放
 - 撤销 / 重做 100 步，一次拖拽 = 一步，误操作随手回退
@@ -76,7 +77,7 @@
 ### 输出
 - 剪贴板：`CF_DIB` + 延迟渲染 PNG，粘到微信 / 文档 / 聊天框都不失真
 - 另存为：PNG / JPEG / WebP（无损），弹出系统对话框自选路径与格式
-- 文件名模板：`airsnip-20241231-235959` / 时间戳 / 仅日期；记住上次目录与格式，连拍不打断
+- 文件名模板：`screentrans-20241231-235959` / 时间戳 / 仅日期；记住上次目录与格式，连拍不打断
 
 ### 长截图
 - 以当前选区为视口，自己滚动页面、`Enter` 收尾，`Ctrl+Z` 可撤销最后一段
@@ -94,7 +95,7 @@
   隐藏只影响绘制，快捷键与输出照旧（藏了保存按钮，`Ctrl+S` 照样能存）
 - 开机自启、全部快捷键改键（含冲突检测与输入法兼容）
 - 贴图默认位置（原位置 / 屏幕中间）、双击选区空白的动作（复制 / 贴图）、文件名模板、主题
-- 「关于」页：版本、许可、第三方组件清单、项目地址
+- 设置保留通用、工具栏、快捷键、保存和外观五页；许可声明随发布包提供
 
 ## 快捷键
 
@@ -120,7 +121,7 @@
 贴图窗口：左键拖动、滚轮缩放、`Ctrl`+滚轮透明度、双击 / `Esc` 关闭、右键菜单、`Ctrl+F3` 边框开关、方向键移动。
 
 全局热键默认 `F1` 截图、`F3` 贴图，可在设置面板修改（也支持 `PrtScn` 这类只发松键消息的系统键）；无修饰键会抢占其他程序按键，建议用 `Ctrl` / `Alt` 组合。
-「再次截图」（默认 `Shift+F1`）只在截图过程中生效：按一下就把当前画面（含工具栏、选区、已有的标注）当作新底图重新框选，用来截 AirSnip 自己的界面。
+「再次截图」（默认 `Shift+F1`）只在截图过程中生效：按一下就把当前画面（含工具栏、选区、已有的标注）当作新底图重新框选，用来截 ScreenTrans 自己的界面。
 鼠标中键与两个侧键可当截图 / 贴图 / 贴图边框键（Raw Input 订阅，不抢占其他程序）：不支持鼠标 + 修饰键组合，也无需担心按键被吞。
 
 ## 系统要求
@@ -132,44 +133,32 @@
 
 ## 下载与使用
 
-1. 从 [Releases](https://github.com/bd-dxg/airsnip/releases) 下载 `airsnip-v*-win-x64.zip`，解压到任意目录（绿色单文件，无需安装）
-2. 双击 `airsnip.exe`：程序**需要管理员权限**（否则无法覆盖管理员权限的窗口，见 ADR 0003），首次运行会弹 UAC，请选「是」
+1. 从本仓库的 Releases 页面下载 `ScreenTrans-v*-win-x64.zip`，解压到任意目录（绿色单文件，无需安装）
+2. 双击 `ScreenTrans.exe`：程序**需要管理员权限**（否则无法覆盖管理员权限的窗口，见 ADR 0003），首次运行会弹 UAC，请选「是」
 3. 启动后托盘常驻（无主窗口），按 `F1` 截图 / `F3` 贴图
 4. 托盘左键打开设置，右键为「设置 / 退出」
-5. 配置位置：`%APPDATA%\airsnip\config.toml`
+5. 配置位置：`%APPDATA%\screentrans\config.toml`
 
-**自动更新**：启动后 3 秒静默检查一次新版本（可在设置 → 关于页关闭），发现新版本时弹托盘气泡提示；到「关于 → 版本更新」点一下即可下载并自动替换重启。清单与安装包优先走国内加速镜像，GitHub 直连兜底；清单用 ed25519 签名 + SHA-256 校验，验签不过不会安装。
+**手动升级**：本地定制版已移除关于页及自动更新功能，升级请退出程序后手动替换 EXE。
 
 **首次运行提示**：exe 未做代码签名，Windows SmartScreen 可能提示「已保护你的电脑」——点「更多信息」→「仍要运行」。
 
-**从旧版 `jietu`（v0.5.0 及更早）升级**：本版改名为 AirSnip，**不做自动迁移**，请手动完成三件事——
-1. 删除旧的开机自启任务（管理员 PowerShell）：`schtasks /delete /tn jietu /f`
-2. 退出并删除旧版 `jietu.exe`：新旧版的单实例互不排斥，同时运行会抢同一组热键
-3. 设置需重设一次（新配置在 `%APPDATA%\airsnip\config.toml`）；旧截图仍在 `图片\jietu`，不会自动搬家
+**从 AirSnip 升级**：新配置写入 `%APPDATA%\screentrans\config.toml`；新配置缺失时兼容读取旧 `%APPDATA%\airsnip\config.toml`，保存设置后写入新目录。请先退出旧 AirSnip；如曾启用旧版自启，请在旧版设置里关闭，再在 ScreenTrans 中重新开启，避免两套程序同时启动。旧截图文件不会移动。
 
 ## 构建与开发
+
+本地与 CI 构建、校验、打包统一使用 `scripts/build.ps1`，发布步骤见 [发布指南](docs/publishing.md)。
 
 ```powershell
 cargo run                 # 开发版（不提权，可调试）
 cargo build --release     # 发布版（manifest 要求管理员权限，单文件）
-cargo test                # 单测（336 项，另 7 项需 --ignored 手动触发）
+cargo test                # 单测；真实抓屏需要桌面权限
 cargo fmt --check         # 格式化检查
 cargo deny check          # 依赖许可证 / 安全公告 / 来源检查
-pwsh scripts/package.ps1  # 打包 dist\airsnip-v{版本}-win-x64.zip / .exe
-pwsh scripts/gen-latest-json.ps1 -Notes "说明"  # 生成并签名自动更新清单 latest.json
+pwsh scripts/package.ps1  # 打包 dist\ScreenTrans-v{版本}-win-x64.zip / .exe
 ```
 
-技术栈：Rust 1.98（edition 2024）、windows-rs 0.62、tiny-skia 0.12（矢量栅格化）、DirectWrite（文字）、serde / toml、png / jpeg-encoder / image-webp。MSVC 运行时**静态链接**，exe 不依赖 VC++ Redistributable。当前版本 v0.11.1。
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=bd-dxg%2Fairsnip&type=date&releases=&legend=bottom-right">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=bd-dxg/airsnip&type=date&theme=dark&legend=bottom-right" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=bd-dxg/airsnip&type=date&legend=bottom-right" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=bd-dxg/airsnip&type=date&legend=bottom-right" />
- </picture>
-</a>
+技术栈：Rust 1.98（edition 2024）、windows-rs 0.62、tiny-skia 0.12（矢量栅格化）、DirectWrite（文字）、serde / toml、png / jpeg-encoder / image-webp。MSVC 运行时**静态链接**，exe 不依赖 VC++ Redistributable。当前版本 v1.0.0。
 
 ## 已知限制
 
@@ -187,6 +176,10 @@ pwsh scripts/gen-latest-json.ps1 -Notes "说明"  # 生成并签名自动更新�
 - `docs/release-notes/` — 各版本发布说明
 - `docs/perf-m5.md` — 性能实测数据与优化过程
 - `THIRD-PARTY.md` — 第三方组件声明
+
+## 上游来源
+
+本项目基于 [AirSnip](https://github.com/bd-dxg/airsnip) 修改，保留上游许可证、历史架构决策和第三方声明。
 
 ## 许可
 

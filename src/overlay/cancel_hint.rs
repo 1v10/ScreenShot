@@ -182,7 +182,7 @@ pub(super) fn hint_text(key: u32, editing: bool) -> String {
 /// 提示几何：优先贴在**选区内部右上角**；选区塞不下整个提示时退到**选区上方**，
 /// 上方空间不足（选区贴屏幕顶）再退到**下方**；最后水平钳回屏幕内。
 pub(super) fn hint_rect(text: &str, anchor: SelRect, vw: i32, vh: i32, ui: Ui) -> SelRect {
-    let spec = FontSpec::new(ui.f(FONT_BASE));
+    let spec = FontSpec::ui(ui.f(FONT_BASE));
     let (tw, th) = dwrite::measure(text, &spec);
     let (pad_x, pad_y) = (ui.f(PAD_X_BASE), ui.f(PAD_Y_BASE));
     let w = (tw + pad_x * 2.0).ceil() as i32;
@@ -232,7 +232,7 @@ pub(super) fn draw(pixmap: &mut Pixmap, hint: &CancelHint, ui: Ui) {
         scale(ALERT_BORDER[3], a),
     ];
     rounded_rect(pixmap, hint.rect, ui.f(RADIUS_BASE), bg, Some(border));
-    let spec = FontSpec::new(ui.f(FONT_BASE));
+    let spec = FontSpec::ui(ui.f(FONT_BASE));
     let (tw, th) = dwrite::measure(&hint.text, &spec);
     let x = hint.rect.x as f32 + (hint.rect.w as f32 - tw) / 2.0;
     let y = hint.rect.y as f32 + (hint.rect.h as f32 - th) / 2.0;
@@ -345,7 +345,7 @@ mod tests {
         let ui = Ui::from_dpi(96);
         let (vw, vh) = (1920, 1080);
         let text = "再按一次 Esc 放弃标注并退出截图";
-        let spec = FontSpec::new(ui.f(FONT_BASE));
+        let spec = FontSpec::ui(ui.f(FONT_BASE));
         let (tw, th) = dwrite::measure(text, &spec);
         let hint_w = (tw + ui.f(PAD_X_BASE) * 2.0).ceil() as i32;
         let hint_h = (th + ui.f(PAD_Y_BASE) * 2.0).ceil() as i32;

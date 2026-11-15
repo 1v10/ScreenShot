@@ -1,14 +1,18 @@
-# AirSnip（轻截）开发指南
+# ScreenTrans 开发指南
 
 ## 项目概览
 
 轻量原生截图与标注工具（Windows 11，Rust + windows-rs，纯 CPU 渲染），面向无独显迷你主机。目标：常驻 ≈0 开销、触发即用、框选/箭头/文本/高斯模糊/高亮标注、长截图、贴图。
 
-软件名 **AirSnip（轻截）**：展示层用 `AirSnip` / `AirSnip 轻截`，技术标识（crate、exe、仓库、配置目录、任务计划、窗口类、文件名前缀）一律小写 `airsnip`。v0.5.0 之前叫 `jietu`，改名决策与存量影响见 `docs/adr/0014-rename-to-airsnip.md`。
+软件名 **ScreenTrans**：展示名及 EXE 为 `ScreenTrans` / `ScreenTrans.exe`；crate、配置目录、窗口类、互斥量和自启任务统一小写 `screentrans`。上游旧名 AirSnip；改名与配置兼容见 `docs/adr/0042-rename-screentrans-and-release-ci.md`。
 
 完整需求见 `screenshot-tool-PRD.md`，架构决策见 `docs/adr/`。
 
 ## 项目状态
+
+- **当前命名与发布（ADR 0042）**：当前 ScreenTrans 版本为 **v1.0.0**；展示名/EXE 为 ScreenTrans，crate 与配置目录为 screentrans，技术环境变量前缀 SCREENTRANS。本地构建入口 `scripts/build.ps1`，发布指南 `docs/publishing.md`；下方 AirSnip 名称、自动更新与旧发布命令仅是历史状态。用户明确要求由自己执行远程 Git 操作、tag、推送和发布触发；代理仅编辑本地配置并本地验证。
+
+- **本地定制修订（ADR 0040）**：删除关于页及项目链接、在线许可入口、赞赏码、完整自动更新功能与更新开发工具；设置保留五页。发布包继续包含 LICENSE 与 THIRD-PARTY.md。截图/贴图编辑默认首个可见色块，全隐藏时颜色 1。历史更新 ADR 与发版记录仅供历史参考，不应据此恢复更新代码。
 
 - **撤销 OCR 与翻译**（ADR 0035，v0.12.0）：`src/ocr/`、`src/app/bubble/`（OCR 文字气泡）、设置面板「OCR 翻译」页、工具栏 OCR 按钮、`T` 键、`[ocr]` 配置段、`hotkey.ocr_key`、`windows` crate 的 `Media_Ocr` / `Storage_Streams` / `Win32_System_WinRT` / `Globalization` / `Graphics_Imaging` / `Foundation` 特性、以及对 `windows-future` 的直接依赖一并删除（它仍是 `windows` crate 的无条件传递依赖，无法从 lock 里去掉，但代码里已无使用）；`output::copy_text_to_clipboard`（唯一消费者是气泡）同批删除。**理由**：与「轻量、常驻 ≈0 开销」的设计理念不符——提升识别精度或改走云端 API 必然增大体积，且需求没有上限（普通 OCR 可用后还会有表格 / 数学公式）；翻译质量受 OCR 精度拖累，投入产出不成立。**对外口径**：「AirSnip 轻截将撤销 OCR 与翻译功能，如需使用相关功能，请通过其他软件平替。」连带变化：设置页 7 → 6 页、快捷键键帽行 16 → 15 项、工具栏可见性元素 24 → 23 项、输出组 3 → 2 项。历史实现与实测结论保留在 ADR 0022，**不要据此恢复代码**。`CONTEXT.md` 同期删除并加入 `.gitignore`（它早在 3da1fea 就被删过一次，后又被误加回）。
 - **截图后默认「移动选区」**（ADR 0036，v0.12.0）：框选完成后默认进入**移动态**（`editor::Mode::Move`）——选区内拖动 = 平移整个选区（标注跟着走，`Document::translate` 不进撤销栈）、拖对象本体 = 移动该对象；要画标注必须显式选工具（工具栏按钮 / 数字键），画完留在绘制态，点「移动」按钮或按 `V`（`ToolKeys::move_key`，默认 0x56，设置面板可改并参与冲突检测）回到移动态。**取消 `last_tool` 记忆**（`settings::last_tool` / `last_tool_store` / `OverlayOpts::default_tool` 整块删除）：每次截图都从移动态开始，颜色 / 线宽 / 字号照旧记忆。ADR 0023 的「绘制优先」改为**仅在绘制态**成立（已在 0023 顶部加修订注记），光标仍由 `pick_target` 决定（移动态四向、绘制态十字）。分类落点：`pick::inside_target`（纯函数，单测覆盖模式×命中矩阵）、`Mode` 存 `Overlay::mode`（`mode.tool() == None` 即移动态，原来的 `Overlay::tool` 字段被它取代）、`pick::effective_mode` 兜底贴图编辑模式（选区锁定 → 按绘制态处理，防锁定选区被平移掉）。**双击选区空白的动作可配**（`config.double_click_action`，默认 `copy`；设置面板「通用」页）：复制截图 / 贴到屏幕（等价 `F3`）；与「贴图位置」一起从两行单选改为**一行开关并立即写回**（面板不关、下一次截图即生效），且**行文字随开关状态变**（`panel::draw::toggle_label`：关写默认行为、开写被打开的行为，否则用户看不出「关」是什么意思）。工具栏「工具」组首位新增**移动**按钮（`ToolbarSlot::Move`，配置键 `tool.move`，图标 `toolbar/move.svg` 为占位四向箭头，已记入 `assets/icons/ui/README.md` 待换 Material Symbols）；工具组 10 → 11 项、可见性元素 23 → 24 项，设置面板组头行高 26 → 24（`GROUP_H`）给页脚提示留回 12px（有 `hint_sits_below_last_row` 守门）。`cargo test` 341 项绿。
@@ -37,7 +41,7 @@
   ① **原位贴图偏移**（#158）：载荷里带的是**覆盖层画布坐标**（原点在虚拟屏左上角），`pin::create` 却当屏幕坐标直接建窗 —— 单屏或主屏在左上时 `SM_XVIRTUALSCREEN` 为 (0, 0)，加法恒等所以看不出；副屏在左 / 在上时该原点是负数，贴图整体偏出一整块屏的量再被限幅拉回主屏边缘。收敛成纯函数 `to_screen`（`src/overlay/annotate/output.rs`），贴图与长截图两路共用，以后新增输出路径不会再各写一遍加法（OCR 那一路已在 ADR 0035 撤销）。
   ② **剪贴板贴图居中跨屏**（#166，`src/pin/place.rs`）：F3 剪贴板贴图没有坐标，居中本身是设计，但基准取的是**整个虚拟屏**（`SM_CXVIRTUALSCREEN` = 所有显示器并集），主屏不在左上时它的中心落在两屏接缝上，贴图一半一块屏。改为 `place::resolve` 单一入口：`Original` + 有坐标按**虚拟屏**限幅（选区本来就可能跨屏，语义不变），其余按 `GetCursorPos` + `MonitorFromPoint` + `GetMonitorInfoW` 取到的 `rcMonitor` 居中；级联偏移 / 钳位 / 落点计算顺带从 `pin/mod.rs` 抽出（该文件回到 300 行内）。单测守住两条策略的关键差异：**虚拟屏居中必然跨接缝**（`x = -200`，正是提问者截图里的现象）。
   **本地无多屏环境，真实像素级对齐仍待多屏用户复验**，单测只守算术。
-- 当前版本 **v0.12.0**（功能 · 正式）：窗口吸附 + 控件级捕捉（CAP-6 两级，issue #62，ADR 0037 / 0039）、框选完默认「移动选区」且平移时标注跟随（ADR 0036）、双击选区空白动作可配、**撤销 OCR 与翻译**（ADR 0035）；另修三处多显示器问题（原位贴图偏移、剪贴板贴图居中跨屏、混合 HDR/SDR 非 HDR 屏全黑）与「设置面板开着时点托盘不置前」。`main` 已合并 PR #158–#178。发布说明见 `docs/release-notes/v0.12.0.md`。
+- 上游历史版本 **v0.12.0**（功能 · 正式）：窗口吸附 + 控件级捕捉（CAP-6 两级，issue #62，ADR 0037 / 0039）、框选完默认「移动选区」且平移时标注跟随（ADR 0036）、双击选区空白动作可配、**撤销 OCR 与翻译**（ADR 0035）；另修三处多显示器问题（原位贴图偏移、剪贴板贴图居中跨屏、混合 HDR/SDR 非 HDR 屏全黑）与「设置面板开着时点托盘不置前」。`main` 已合并 PR #158–#178。发布说明见 `docs/release-notes/v0.12.0.md`。
 - 上一版 **v0.11.1**（修复 · 正式）：修复 v0.11.0 回归「贴图编辑时工具栏整条不出现」（issue #152 第 2 点，`refresh_toolbar` 把「布局是 `None`」当成「不需要工具栏」，判据抽成 `bar_stale` 并加单测，#153）、标注文字输入法候选框不跟随光标（issue #139，ADR 0034，`ImmSetCandidateWindow` / `ImmSetCompositionWindow` 按**客户区坐标**锚到自绘光标，#155），另把取消开关文案改为「连按两次 Esc / 右键退出」（#160，行为不变）；`main` 已合并 PR #153 / #155 / #160。发布说明见 `docs/release-notes/v0.11.1.md`。
 - 上一版 **v0.11.0**（正式）：新增工具栏元素可逐个隐藏（EDT-16，issue #143，ADR 0033）+ 撤掉 OCR 总开关、选中对象单独删除（`Del` / `Backspace`，issue #71，ADR 0032）、快捷键表重构与「恢复默认」按钮误触发修复（issue #140）；`main` 已合并 PR #142 / #145 / #148 / #149。发布说明见 `docs/release-notes/v0.11.0.md`。
 - 上一版 **v0.10.0**（正式）：新增直线 / 椭圆 / 手绘三个标注工具（EDT-13/14/15，issue #134，ADR 0030）、5 个色块全部可自定义（issue #122 / #123）、取消改为「连按两次」（issue #120，ADR 0027 后续）、长截图 HDR 下内存暴涨修复（issue #128，ADR 0029）；`main` 已合并 PR #126 / #130 / #133 / #137。发布说明见 `docs/release-notes/v0.10.0.md`。上一版 v0.9.0（正式）：新增序号标记工具（EDT-12，issue #82，ADR 0026）、自定义标注颜色（EDT-7，issue #73）、贴图按空格进入标注编辑（issue #56，ADR 0028），并修复飞书粘贴（ADR 0025）、设置面板比例失真、右键误触退出丢失标注（ADR 0027）；`main` 已合并 PR #106–#116。发布说明见 `docs/release-notes/v0.9.0.md`。上一版 v0.8.1：OCR（#61，ADR 0022）随 v0.8.0-beta.1 预发布后转正；`main` 已合并 PR #83–#104（5 项修复：HDR 桌面截图过曝发白、标注无法在已有图形上叠层绘制、托盘图标重试窗口 5 秒→3 分钟、F10 等系统键热键在截图状态失效、系统深/浅色切换后设置面板不跟随，另「取字」统一改名「OCR」）。发布说明见 `docs/release-notes/v0.8.1.md`（预发布版见 `docs/release-notes/v0.8.0-beta.1.md`）。上一版 v0.7.0：M0–M4 与 M5a/M5b 全部交付并合并，`main` 已合并 PR #32–#66（release 版黑窗修复、设置窗口比例与图标、v0.3.1–v0.6.0 发布、开机自启托盘图标消失修复 + `WM_SETTINGCHANGE` 指针加固、`app/mod.rs` 拆分、长截图改纯手动滚动 + 拼接预览 + 输入法屏蔽、保存对话框记住上次目录、界面图标统一、圆角内部控制柄 + 扩展到四类、README 重写 + 头图、提权进程托盘图标自愈、改名 AirSnip + 新应用图标、选区尺寸提示收尾、快捷键清空为「未设置」+ 恢复默认 + 托盘入口、长截图另存为、自动更新），工作区干净。M5a 交付要点：另存为对话框（PNG / JPEG / WebP 无损 + 文件名模板）、选中对象包围框与八向手柄 + `Shift` 约束（`overlay/objedit/`、`editor/transform.rs`）、方向键微调（1px / `Shift` 5px）、系统字体枚举 + 工具栏第二行字体面板（`render::fonts`、`overlay::font`、`overlay::toolbar::fontlist`）；决策见 `docs/adr/0007-drop-delete-and-layering.md`、`0008-font-picker.md`、`0010-radius-handle.md`、`0011-corner-all-kinds.md`；`cargo test` 220 项绿（M5a 时期的快照；另有 3 项手动触发的集成测试：真实网络请求、发布清单验签闭环、线上 Release 端到端，`--ignored`）。
@@ -99,9 +103,7 @@
 - 测试：`cargo test`（覆盖：抓屏/剪贴板/对象模型与撤销栈/矢量栅格化/曲线与命中/文本测量与字体（粗斜体渲染、族间测量、未知族名回退）/系统字体枚举/长截图拼接/WebP/变换与手柄/光标映射/布局/字体面板/设置面板布局与 DPI 缩放/设置变更消息内存校验/图标 SVG 解析与视觉重量/圆角读写与手柄/圆角遮罩覆盖率与回贴/工具栏重建判据（缺布局必建）/输入法候选框锚点（副屏负原点、换行位移））；`--ignored` 的是需手动触发的集成测试：真实网络请求、发布清单验签闭环、线上 Release 端到端。**不写用例数量**：每加一个用例就要改一次，维护成本白花，看 `cargo test` 输出即可。
 - 格式化检查：`cargo fmt --check`（提交前必须通过）
 - 性能采集：`scripts/perf-capture.ps1`（热键延迟 + 帧耗时，需管理员）与 `scripts/perf.ps1`（待机 CPU/内存）；报告见 `docs/perf-m5.md`
-- 打包发布：`scripts/package.ps1`（构建 release → 校验体积/图标/PE 导入表 → 输出 `dist\airsnip-v{版本}-win-x64.zip` 与自动更新用的 `.exe`）
-- 生成更新清单：`scripts/gen-latest-json.ps1 -Notes "说明"`（算 SHA-256 → 调 `update-sign` 签名 → 输出 `dist\latest.json`，需先跑 package.ps1）
-- 更新密钥：`cargo run --example update-keygen`（私钥写 `%USERPROFILE%\.airsnip\update.key`，公钥打印出来填进 `UPDATE_PUBKEY_HEX`）
+- 打包发布：`scripts/package.ps1`（构建 release → 校验体积/图标/PE 导入表 → 输出 `dist\airsnip-v{版本}-win-x64.zip` 与独立运行的 `.exe`）
 - 许可证与依赖检查：`cargo deny check`（配置在 `deny.toml`；依赖变更后重跑 `scripts/gen-third-party.ps1` 更新 `THIRD-PARTY.md`）
 
 ## 开发流程（AI 驱动约定）

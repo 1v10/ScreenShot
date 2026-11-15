@@ -58,7 +58,7 @@ pub(super) fn draw_group(pixmap: &mut Pixmap, panel: &Panel, row: &super::contro
 
     let d = (16.0 * s) as i32;
     // 勾选框紧跟组名（而不是靠到行右缘）：离标题 400px 远的话看不出它管的是这一组
-    let (title_w, _) = dwrite::measure(row.label, &dwrite::FontSpec::new(size));
+    let (title_w, _) = dwrite::measure(row.label, &dwrite::FontSpec::ui(size));
     let box_rect = SelRect {
         x: row.rect.x + row.label_pad + title_w as i32 + (10.0 * s) as i32,
         y: row.rect.y + (row.rect.h - d) / 2,

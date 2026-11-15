@@ -52,10 +52,10 @@ pub fn message_vk(msg: u32, wparam: usize) -> Option<u32> {
     }
 }
 
-/// `AIRSNIP_DEBUG` 只读一次：`WM_INPUT` 是热路径，每次按键查环境变量不划算。
+/// `SCREENTRANS_DEBUG` 只读一次：`WM_INPUT` 是热路径，每次按键查环境变量不划算。
 pub fn debug_enabled() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("AIRSNIP_DEBUG").is_some())
+    *ON.get_or_init(|| std::env::var_os("SCREENTRANS_DEBUG").is_some())
 }
 
 /// 注册全局鼠标输入（Raw Input）。失败只影响鼠标热键，不阻塞启动；
@@ -70,7 +70,7 @@ pub fn install(hwnd: HWND, wanted: bool) {
     let ok = unsafe { RegisterRawInputDevices(&devices, std::mem::size_of::<RAWINPUTDEVICE>() as u32) }.is_ok();
     if debug_enabled() {
         eprintln!(
-            "[airsnip] Raw Input 注册{}（鼠标热键）",
+            "[screentrans] Raw Input 注册{}（鼠标热键）",
             if ok { "成功" } else { "失败" }
         );
     }

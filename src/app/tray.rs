@@ -5,8 +5,7 @@
 
 use windows::Win32::Foundation::{GetLastError, LPARAM, WPARAM};
 use windows::Win32::UI::Shell::{
-    NIF_ICON, NIF_INFO, NIF_MESSAGE, NIF_TIP, NIIF_INFO, NIM_ADD, NIM_DELETE, NIM_MODIFY, NOTIFYICONDATAW,
-    Shell_NotifyIconW,
+    NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NOTIFYICONDATAW, Shell_NotifyIconW,
 };
 use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::w;
@@ -49,12 +48,12 @@ impl App {
             uFlags: NIF_MESSAGE | NIF_ICON | NIF_TIP,
             uCallbackMessage: WM_TRAY,
             hIcon: unsafe { LoadIconW(Some(self.hinstance), icon_resource()).unwrap_or_default() },
-            szTip: wide_array("AirSnip 轻截"),
+            szTip: wide_array("ScreenTrans"),
             ..Default::default()
         };
         let ok = unsafe { Shell_NotifyIconW(NIM_ADD, &nid) }.as_bool();
-        if !ok && std::env::var_os("AIRSNIP_DEBUG").is_some() {
-            eprintln!("[airsnip] 托盘 NIM_ADD 失败，错误码 {:?}", unsafe {
+        if !ok && std::env::var_os("SCREENTRANS_DEBUG").is_some() {
+            eprintln!("[screentrans] 托盘 NIM_ADD 失败，错误码 {:?}", unsafe {
                 GetLastError()
             });
         }
@@ -84,23 +83,6 @@ impl App {
     pub fn restore_tray(&mut self) {
         self.tray_retry = 0;
         self.ensure_tray();
-    }
-
-    /// 托盘气泡提示（SYS-7）：静默检查发现新版本时用，不用模态框打断用户。
-    pub fn balloon(&self, title: &str, text: &str) {
-        let mut nid = NOTIFYICONDATAW {
-            cbSize: size_of::<NOTIFYICONDATAW>() as u32,
-            hWnd: self.hwnd,
-            uID: ID_TRAY,
-            uFlags: NIF_INFO,
-            ..Default::default()
-        };
-        nid.szInfoTitle = wide_array::<64>(title);
-        nid.szInfo = wide_array::<256>(text);
-        nid.dwInfoFlags = NIIF_INFO;
-        unsafe {
-            let _ = Shell_NotifyIconW(NIM_MODIFY, &nid);
-        }
     }
 
     /// 移除托盘图标。

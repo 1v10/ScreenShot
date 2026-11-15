@@ -66,7 +66,7 @@ pub(super) fn draw(pixmap: &mut Pixmap, panel: &Panel, row: &Row, hovered: bool)
     } else {
         p.text_dim
     };
-    let (w, _) = dwrite::measure(&text, &dwrite::FontSpec::new(size));
+    let (w, _) = dwrite::measure(&text, &dwrite::FontSpec::ui(size));
     // 文字水平居中于键帽（减去按钮后的可用区）
     let x = kb.x as f32 + (kb.w as f32 - w) / 2.0;
     let y = kb.y as f32 + (kh as f32 - size * 1.2) / 2.0;
@@ -149,7 +149,7 @@ fn confirm(owner: windows::Win32::Foundation::HWND, text: &str) -> bool {
         MessageBoxW(
             Some(owner),
             PCWSTR(ws.as_ptr()),
-            w!("AirSnip"),
+            w!("ScreenTrans"),
             MB_YESNO | MB_ICONWARNING,
         ) == IDYES
     }
