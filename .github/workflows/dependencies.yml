@@ -1,0 +1,21 @@
+name: Dependency checks
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  cargo-deny:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          rust-version: '1.98.0'
+          arguments: --all-features --locked
+          command: check

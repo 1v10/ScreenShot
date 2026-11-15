@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-//! 配置（SYS-5）：`%APPDATA%\airsnip\config.toml`，缺失或损坏时回退默认值。
+//! 配置（SYS-5）：`%APPDATA%\screentrans\config.toml`，缺失或损坏时回退默认值。
 
 pub mod hotkey;
 pub mod panel;
@@ -52,14 +52,14 @@ pub enum PinPosition {
 /// 保存文件名模板（OUT-2）：保存对话框预填的文件名，可在设置面板选择。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum NameStyle {
-    /// `airsnip-20241231-235959`（日期 + 时间，默认）。
+    /// `screentrans-20241231-235959`（日期 + 时间，默认）。
     #[default]
     #[serde(rename = "datetime")]
     DateTime,
     /// `1735689599123`（Unix 毫秒时间戳）。
     #[serde(rename = "timestamp")]
     Timestamp,
-    /// `airsnip-20241231`（仅日期）。
+    /// `screentrans-20241231`（仅日期）。
     #[serde(rename = "date")]
     Date,
 }
@@ -183,10 +183,6 @@ pub struct Config {
     pub last_save_dir: Option<String>,
     /// 长截图拼接高度上限（像素，LNG-7，默认 30000）。
     pub longshot_max_height: u32,
-    /// 启动后自动检查更新（SYS-7，默认开）。关闭后只能从关于页手动检查。
-    pub auto_check_update: bool,
-    /// 用户选择「跳过此版本」的版本号（SYS-7）。
-    pub skipped_version: Option<String>,
 }
 
 impl Default for Config {
@@ -211,17 +207,15 @@ impl Default for Config {
             last_save_ext: None,
             last_save_dir: None,
             longshot_max_height: 30000,
-            auto_check_update: true,
-            skipped_version: None,
         }
     }
 }
 
 impl Config {
-    /// 配置目录：`%APPDATA%\airsnip`。
+    /// 配置目录：`%APPDATA%\screentrans`。
     pub fn config_dir() -> PathBuf {
         let appdata = std::env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
-        PathBuf::from(appdata).join("airsnip")
+        PathBuf::from(appdata).join("screentrans")
     }
 
     /// 配置文件路径。
@@ -229,12 +223,10 @@ impl Config {
         Self::config_dir().join("config.toml")
     }
 
-    /// 加载配置：文件缺失或解析失败时回退默认值（SYS-5）。
+    /// 加载配置：新文件不存在时兼容旧 AirSnip 配置；损坏时回退默认值（SYS-5）。
     pub fn load() -> Self {
-        let mut cfg: Config = match std::fs::read_to_string(Self::config_path()) {
-            Ok(text) => toml::from_str(&text).unwrap_or_default(),
-            Err(_) => Config::default(),
-        };
+        let legacy = Self::config_dir().with_file_name("airsnip").join("config.toml");
+        let mut cfg = Self::load_from_paths(&Self::config_path(), &legacy);
         // 迁移：旧版共享 modifiers（同时作用于两键）→ 拆分到各键
         let h = &mut cfg.hotkey;
         if h.legacy_modifiers != 0 && h.screenshot_modifiers == 0 && h.pin_modifiers == 0 {
@@ -242,6 +234,18 @@ impl Config {
             h.pin_modifiers = h.legacy_modifiers;
         }
         cfg
+    }
+
+    /// 显式路径便于验证迁移；新配置即使损坏，也不覆盖为旧偏好。
+    fn load_from_paths(current: &std::path::Path, legacy: &std::path::Path) -> Self {
+        let text = match std::fs::read_to_string(current) {
+            Ok(text) => Ok(text),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => std::fs::read_to_string(legacy),
+            Err(e) => Err(e),
+        };
+        text.ok()
+            .and_then(|text| toml::from_str(&text).ok())
+            .unwrap_or_default()
     }
 
     /// 保存配置：自动创建目录，写入失败静默忽略。
@@ -255,6 +259,41 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn renamed_config_uses_legacy_only_when_new_file_is_absent() {
+        let temp = std::env::temp_dir().join(format!("screentrans-config-{}", std::process::id()));
+        std::fs::create_dir_all(&temp).unwrap();
+        let current = temp.join("new.toml");
+        let legacy = temp.join("old.toml");
+        std::fs::write(&legacy, "theme = \"dark\"\n").unwrap();
+        assert_eq!(Config::load_from_paths(&current, &legacy).theme, ThemeSetting::Dark);
+        std::fs::write(&current, "theme = \"light\"\n").unwrap();
+        assert_eq!(Config::load_from_paths(&current, &legacy).theme, ThemeSetting::Light);
+        std::fs::write(&current, "invalid = [").unwrap();
+        assert_eq!(Config::load_from_paths(&current, &legacy).theme, ThemeSetting::Follow);
+        std::fs::remove_file(current).unwrap();
+        std::fs::remove_file(legacy).unwrap();
+        std::fs::remove_dir(temp).unwrap();
+    }
+
+    /// 旧更新设置不应使用户配置回退默认值，保存后应清理已删除的字段。
+    #[test]
+    fn removed_update_fields_preserve_other_preferences() {
+        let cfg: Config = toml::from_str(
+            "auto_check_update = true\nskipped_version = \"0.12.0\"\ntheme = \"dark\"\n[toolbar]\nhidden = [\"color.1\"]\n",
+        )
+        .unwrap();
+        assert_eq!(cfg.theme, ThemeSetting::Dark);
+        assert!(!cfg.toolbar.visible(ToolbarSlot::Color(0)));
+        assert_eq!(cfg.toolbar.default_color(), 1);
+        let saved = toml::to_string(&cfg).unwrap();
+        assert!(!saved.contains("auto_check_update"));
+        assert!(!saved.contains("skipped_version"));
+        let back: Config = toml::from_str(&saved).unwrap();
+        assert_eq!(back.theme, ThemeSetting::Dark);
+        assert_eq!(back.toolbar.default_color(), 1);
+    }
 
     /// 旧配置（共享 modifiers）能正确迁移到各键独立修饰键。
     #[test]

@@ -32,9 +32,9 @@ impl Panel {
         for item in &layout.items {
             if let Item::Row(r) = item {
                 if in_rect(r.rect, x, y) {
-                    // 按钮行只有按钮本身可点：点在「恢复默认 / 版本更新」按钮外的同一行算点空白
+                    // 按钮行只有按钮本身可点：点在「恢复默认」按钮外的同一行算点空白
                     // （绘制上该行也不高亮），否则按钮外一大片区域都会触发它。
-                    if r.kind == RowKind::Button && !in_rect(super::link::button_rect(self, r), x, y) {
+                    if r.kind == RowKind::Button && !in_rect(super::button::button_rect(self, r), x, y) {
                         return None;
                     }
                     // 清除按钮在控件区内部，必须先判，否则会被当成键帽进捕获（SYS-2）
@@ -180,27 +180,6 @@ impl Panel {
             RowId::NameDate => {
                 self.end_capture();
                 self.config.name_style = crate::settings::NameStyle::Date;
-            }
-            // 项目主页（关于页）：用浏览器打开
-            RowId::Repo => {
-                self.end_capture();
-                crate::app::open::url(crate::app::open::REPO_URL);
-            }
-            // 第三方组件声明（M5）：用浏览器打开仓库中的 THIRD-PARTY.md
-            RowId::Licenses => {
-                self.end_capture();
-                crate::app::open::url(crate::app::open::THIRD_PARTY_URL);
-            }
-            // 检查更新（SYS-7）：无待装更新则检查，已有则下载并安装
-            RowId::CheckUpdate => {
-                self.end_capture();
-                self.start_update();
-            }
-            // 启动时自动检查开关（SYS-7）
-            RowId::AutoCheckUpdate => {
-                self.end_capture();
-                self.config.auto_check_update = !self.config.auto_check_update;
-                self.config_dirty = true;
             }
             // 工具栏元素显隐（EDT-16）：纯视觉偏好，只影响绘制，不动快捷键与输出
             RowId::Toolbar(slot) => {

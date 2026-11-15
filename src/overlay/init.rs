@@ -75,7 +75,7 @@ impl Overlay {
         let (mem_dc, dib_bmp, dib_bits) = surface::create_dib_surface(w, h)?;
         if timing {
             eprintln!(
-                "[airsnip] 初始化：原图 clone {t_clone1:?}，暗化 {:?}，暗图 clone {:?}，DIB {:?}",
+                "[screentrans] 初始化：原图 clone {t_clone1:?}，暗化 {:?}，暗图 clone {:?}，DIB {:?}",
                 t_dim - t_clone1,
                 t_clone2 - t_dim,
                 t_init.elapsed() - t_clone2
@@ -89,7 +89,7 @@ impl Overlay {
         } else {
             editor::Mode::Move
         };
-        let start_color = visibility.settle_color(1); // 默认红色
+        let start_color = visibility.default_color();
 
         Ok(Self {
             capture,
@@ -120,7 +120,7 @@ impl Overlay {
             cancel_hint: None,
             pin_key,
             save,
-            color_index: start_color, // 默认红色；被隐藏时落到第一个可见色块
+            color_index: start_color, // 默认颜色 1；被隐藏时落到第一个可见色块
             colors,
             line_width: editor::DEFAULT_LINE_WIDTH,
             blur_radius: editor::DEFAULT_BLUR_RADIUS,

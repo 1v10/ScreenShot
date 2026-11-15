@@ -257,13 +257,9 @@ impl ToolbarConfig {
         (0..SWATCH_COUNT).find(|i| self.visible(ToolbarSlot::Color(*i)))
     }
 
-    /// 开局回落（R5）：当前色块被隐藏时落到第一个可见色块；
-    /// 一个色块都不可见时保留原颜色（标注照常上色）。
-    pub fn settle_color(&self, want: usize) -> usize {
-        if self.visible(ToolbarSlot::Color(want)) {
-            return want;
-        }
-        self.first_visible_color().unwrap_or(want)
+    /// 每次截图默认使用首个可见色块；全隐藏时使用颜色 1（ADR 0040）。
+    pub fn default_color(&self) -> usize {
+        self.first_visible_color().unwrap_or(0)
     }
 }
 
@@ -350,14 +346,25 @@ mod tests {
         assert!(cfg.hidden.is_empty(), "全显后隐藏集合应为空：{:?}", cfg.hidden);
     }
 
-    /// 开局回落（R5）：隐藏的色块落到第一个可见项，全隐藏时保留原颜色。
+    /// 任意色块显隐组合都默认选择界面首项；全隐藏时保留颜色 1。
     #[test]
-    fn settle_falls_back_to_first_visible() {
-        let mut cfg = ToolbarConfig::default();
-        cfg.set_visible(ToolbarSlot::Color(1), false);
-        assert_eq!(cfg.settle_color(1), 0, "应落到第一个可见色块");
-        cfg.set_group_visible(ToolbarGroup::Colors, false);
-        assert_eq!(cfg.settle_color(1), 1, "一个色块都不可见时保留原颜色");
+    fn default_color_follows_first_visible_for_every_combination() {
+        for mask in 0..(1usize << SWATCH_COUNT) {
+            let mut cfg = ToolbarConfig::default();
+            let mut visible = Vec::new();
+            for i in 0..SWATCH_COUNT {
+                let on = mask & (1 << i) != 0;
+                cfg.set_visible(ToolbarSlot::Color(i), on);
+                if on {
+                    visible.push(i);
+                }
+            }
+            assert_eq!(
+                cfg.default_color(),
+                visible.first().copied().unwrap_or(0),
+                "mask={mask}"
+            );
+        }
     }
 
     /// 只存隐藏集合：新元素（不在隐藏集合里）自动可见；未知键无害。

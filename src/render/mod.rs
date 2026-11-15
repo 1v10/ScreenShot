@@ -18,6 +18,7 @@ mod region;
 mod stroke;
 pub mod text;
 mod text_bitmap;
+mod text_ui;
 
 /// 像素区域（x0, y0, x1, y1 半开区间，物理像素）。
 pub type Clip = (i32, i32, i32, i32);

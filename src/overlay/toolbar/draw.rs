@@ -118,7 +118,7 @@ pub fn render(pixmap: &mut Pixmap, bar: &Toolbar, state: &State, p: &Palette) {
                 if state.font_open {
                     rounded_rect(pixmap, *r, ui.f(5.0), p.accent_soft, None);
                 }
-                let spec = FontSpec::new(ui.f(LABEL_SIZE_BASE));
+                let spec = FontSpec::ui(ui.f(LABEL_SIZE_BASE));
                 let color = if state.font_open { p.accent } else { p.text };
                 let name = fit_name(&state.font_family, (r.w - ui.px(12.0)) as f32, &spec);
                 left_text(pixmap, *r, ui.px(6.0), &name, &spec, color);
@@ -128,7 +128,7 @@ pub fn render(pixmap: &mut Pixmap, bar: &Toolbar, state: &State, p: &Palette) {
             Action::FontSmaller => draw_icon(pixmap, Icon::Minus, *r, p.icon),
             Action::FontLarger => draw_icon(pixmap, Icon::Plus, *r, p.icon),
             Action::FontSize => {
-                let spec = FontSpec::new(ui.f(LABEL_SIZE_BASE));
+                let spec = FontSpec::ui(ui.f(LABEL_SIZE_BASE));
                 let text = format!("{}", state.font_size.round() as i32);
                 centered_text(pixmap, *r, &text, &spec, p.text);
             }

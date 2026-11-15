@@ -14,7 +14,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        AirSnip 的卖点是**够轻、平时几乎不占资源、按下热键立刻就能用**。所以提「加功能」时请先想一下：这个功能会不会让它在平时待机时变重（多占内存、多耗 CPU、后台一直跑着）？
+        ScreenTrans 的卖点是**够轻、平时几乎不占资源、按下热键立刻就能用**。所以提「加功能」时请先想一下：这个功能会不会让它在平时待机时变重（多占内存、多耗 CPU、后台一直跑着）？
         如果确实躲不掉（比如必须一直在后台盯着某个事件，或者要额外引入第三方库），在这里先说清楚原因，能大幅提高被采纳的概率。
 
   - type: checkboxes
@@ -43,7 +43,7 @@ body:
       label: 你现在遇到的问题
       description: 描述具体场景，不要只写「希望加个 XX」——知道你卡在哪，才可能给出比你想的更合适的方案
       placeholder: |
-        我在……的时候，需要……，但 AirSnip 现在……
+        我在……的时候，需要……，但 ScreenTrans 现在……
     validations:
       required: true
 
@@ -65,7 +65,7 @@ body:
     id: cost
     attributes:
       label: 平时待机时，这个功能需要一直在后台跑吗
-      description: 这决定了它会让 AirSnip 变重多少
+      description: 这决定了它会让 ScreenTrans 变重多少
       options:
         - 不需要：只在截图、贴图等操作时才干活
         - 需要：平时也得在后台一直跑着（请在下方说明为什么躲不掉）

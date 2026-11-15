@@ -108,14 +108,14 @@ fn draw_row(pixmap: &mut Pixmap, panel: &Panel, row: &super::controls::Row, idx:
     let s = panel.scale;
     let hovered = panel.hover == Some(idx);
     // 悬停底色：圆角矩形，比内容外扩 `HOVER_PAD`，四周留出余量（不再紧贴控件）。
-    // 按钮行不高亮整行（否则是一条长条），改由按钮自身高亮（见 `link::draw_button`）。
+    // 按钮行不高亮整行（否则是一条长条），改由按钮自身高亮（见 `button::draw_button`）。
     if hovered && row.kind != RowKind::Button {
         rounded_rect(pixmap, row.hover, (6.0 * s) as f32, p.row_hover, None);
     }
     let size = 16.0 * s;
     let lx = row.rect.x as f32 + row.label_pad as f32;
-    // 支持项目块与组头的标签由各自的绘制函数负责，此处不重复绘制
-    if !matches!(row.kind, RowKind::Qr | RowKind::Group) {
+    // 组头的标签由专用绘制函数负责，此处不重复绘制
+    if row.kind != RowKind::Group {
         let ly = row.rect.y as f32 + (row.rect.h as f32 - size * 1.2) / 2.0;
         // 开关行文案跟状态走（ADR 0036）：关闭态写默认行为，开启态写被打开的那个行为，
         // 否则用户看不出「开」到底是哪个含义。
@@ -128,10 +128,7 @@ fn draw_row(pixmap: &mut Pixmap, panel: &Panel, row: &super::controls::Row, idx:
         RowKind::KeyCap => super::keycap::draw(pixmap, panel, row, hovered),
         RowKind::Radio => draw_radio(pixmap, panel, row),
         RowKind::Readonly => draw_readonly(pixmap, panel, row),
-        RowKind::About => draw_about(pixmap, panel, row),
-        RowKind::Link => super::link::draw_link(pixmap, panel, row),
-        RowKind::Button => super::link::draw_button(pixmap, panel, row, hovered),
-        RowKind::Qr => super::reward::draw_block(pixmap, panel, row),
+        RowKind::Button => super::button::draw_button(pixmap, panel, row, hovered),
     }
 }
 
@@ -142,7 +139,6 @@ fn draw_toggle(pixmap: &mut Pixmap, panel: &Panel, row: &super::controls::Row) {
     let on = match row.id {
         RowId::Autostart => panel.autostart_on,
         RowId::ConfirmCancel => panel.config.confirm_cancel,
-        RowId::AutoCheckUpdate => panel.config.auto_check_update,
         // 贴图位置（M2b）：开 = 屏幕中间，关 = 截图原位置
         RowId::PinPosCenter => panel.config.pin_position == crate::settings::PinPosition::Center,
         // 双击选区空白（ADR 0036）：开 = 贴图，关 = 复制
@@ -251,16 +247,10 @@ fn draw_readonly(pixmap: &mut Pixmap, panel: &Panel, row: &super::controls::Row)
     draw_right_text(pixmap, panel, row, text);
 }
 
-/// 关于行：右侧版本与许可。
-fn draw_about(pixmap: &mut Pixmap, panel: &Panel, row: &super::controls::Row) {
-    let text = format!("v{} · GPL-3.0", env!("CARGO_PKG_VERSION"));
-    draw_right_text(pixmap, panel, row, &text);
-}
-
-/// 右侧对齐的说明文本（只读行 / 关于行共用）。
+/// 右侧对齐的说明文本（只读行）。
 fn draw_right_text(pixmap: &mut Pixmap, panel: &Panel, row: &super::controls::Row, text: &str) {
     let size = 16.0 * panel.scale;
-    let (w, _) = dwrite::measure(text, &dwrite::FontSpec::new(size));
+    let (w, _) = dwrite::measure(text, &dwrite::FontSpec::ui(size));
     let x = row.control.x + row.control.w as i32 - w as i32;
     let y = row.rect.y as f32 + (row.rect.h as f32 - size * 1.2) / 2.0;
     draw_text(pixmap, x as f32, y, text, size, panel.palette.text_dim);
@@ -268,7 +258,7 @@ fn draw_right_text(pixmap: &mut Pixmap, panel: &Panel, row: &super::controls::Ro
 
 /// 经 DirectWrite 栅格化文本（位置为左上角物理像素）；其他绘制模块共用。
 pub(super) fn draw_text(pixmap: &mut Pixmap, x: f32, y: f32, text: &str, size: f32, color: [u8; 4]) {
-    let spec = dwrite::FontSpec::new(size);
+    let spec = dwrite::FontSpec::ui(size);
     dwrite::draw(pixmap, Point::new(x, y), text, &spec, color, Transform::identity());
 }
 
@@ -293,12 +283,7 @@ mod tests {
 
         // 其余行（开机自启 / 连按两次退出 / 工具栏元素 / 窗口吸附 …）保持静态文案：
         // 窗口吸附只有一个含义（开 = 吸、关 = 不吸），不像「贴图位置」那样两端各是一种行为
-        for id in [
-            RowId::Autostart,
-            RowId::ConfirmCancel,
-            RowId::AutoCheckUpdate,
-            RowId::WindowSnap,
-        ] {
+        for id in [RowId::Autostart, RowId::ConfirmCancel, RowId::WindowSnap] {
             assert_eq!(toggle_label(id, &Config::default()), None, "{id:?} 不应有动态文案");
         }
     }

@@ -156,7 +156,7 @@ pub fn render(pixmap: &mut Pixmap, bar: &Bar, state: &State, p: &Palette) {
         state.hint
     };
     let tx = ui.px(PAD_BASE) as f32;
-    let spec = dwrite::FontSpec::new(ui.f(FONT_BASE));
+    let spec = dwrite::FontSpec::ui(ui.f(FONT_BASE));
     let (tw, th) = dwrite::measure(text, &spec);
     let ty = (h as f32 - th) / 2.0;
     // 文字不超出撤销按钮左侧
@@ -210,7 +210,7 @@ mod tests {
             .map(|(r, _)| r.x)
             .unwrap_or(bar.rect.w);
         let avail = undo_x as f32 - ui.px(PAD_BASE) as f32 - ui.f(4.0);
-        let spec = dwrite::FontSpec::new(ui.f(FONT_BASE));
+        let spec = dwrite::FontSpec::ui(ui.f(FONT_BASE));
         let (tw, _) = dwrite::measure("滚轮滚动 · Enter 完成 · Ctrl+S 另存为", &spec);
         assert!(tw < avail, "提示文字宽 {tw} 应小于可用宽度 {avail}（按钮 {btn}px）");
     }

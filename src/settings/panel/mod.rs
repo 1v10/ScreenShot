@@ -5,15 +5,13 @@
 //! 主题与开机自启即时生效（面板自身重绘 + schtasks 调用）。
 //! 窗口尺寸固定为横向矩形（宽 > 高），切换分类页不改变窗口大小。
 
+mod button;
 mod controls;
 mod draw;
 mod interact;
 mod keycap;
-mod link;
-mod reward;
 mod theme_watch;
 mod toolbar_page;
-mod update;
 mod window;
 
 use tiny_skia::Pixmap;
@@ -33,7 +31,7 @@ use crate::theme::{self, Palette};
 
 use controls::{RowId, Section, W};
 
-const WINDOW_CLASS: PCWSTR = w!("airsnip.settings");
+const WINDOW_CLASS: PCWSTR = w!("screentrans.settings");
 
 /// 面板运行时状态。
 pub struct Panel {
@@ -53,8 +51,6 @@ pub struct Panel {
     pub capturing: Option<RowId>,
     /// 面板窗口句柄（IME 关联操作用）。
     pub(super) hwnd: HWND,
-    /// 主程序窗口句柄（更新完成后需要通知它退出，SYS-7）。
-    pub(super) main_hwnd: HWND,
     /// 捕获期间的 IME 上下文（禁输入法，防止按键被 IME 改写为 0xE5 之类的键码）。
     pub(super) ime_old: HIMC,
     /// 开机自启真实状态（任务计划是否存在，SYS-4）。
@@ -92,7 +88,6 @@ pub fn run(app: &mut App) {
         section: Section::General,
         capturing: None,
         hwnd: HWND::default(),
-        main_hwnd: app.hwnd,
         ime_old: HIMC(std::ptr::null_mut()),
         // 自启开关显示任务计划真实状态，而非配置猜测（SYS-4）
         autostart_on: crate::app::autostart::autostart_enabled(),
@@ -110,8 +105,6 @@ pub fn run(app: &mut App) {
         }
     };
     panel.hwnd = hwnd;
-    // 后台线程（更新检查/下载）通过这个句柄通知面板刷新关于页（SYS-7）
-    crate::update::notify::register(hwnd);
     // 系统深/浅色切换时刷新面板配色（SYS-6）：注册表通知线程，drop 即停
     let _theme_watch = theme_watch::ThemeWatch::spawn(hwnd);
     // 标题栏由 DWM 绘制：创建后先按当前主题着色（切换主题时在 `set_theme` 里更新）
@@ -142,8 +135,6 @@ pub fn run(app: &mut App) {
     }
 
     let panel = unsafe { Box::from_raw(raw) };
-    // 面板即将销毁：不再接收更新状态通知（否则消息会投到已销毁窗口）
-    crate::update::notify::unregister();
     // 兜底：恢复输入法 + 最后同步一次配置（如改完直接关窗）
     let mut panel = panel;
     panel.restore_ime();
@@ -199,11 +190,6 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
             LRESULT(0)
         }
         WM_ERASEBKGND => LRESULT(1),
-        // 后台更新线程的状态变更（SYS-7）：只重绘，状态从 `update::state` 现读
-        crate::update::notify::WM_UPDATE_STATE => {
-            repaint_full(hwnd, panel);
-            LRESULT(0)
-        }
         WM_MOUSEMOVE => {
             let x = (lparam.0 & 0xFFFF) as u16 as i16 as i32;
             let y = ((lparam.0 >> 16) & 0xFFFF) as u16 as i16 as i32;

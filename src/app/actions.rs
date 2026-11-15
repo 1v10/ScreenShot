@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-//! `App` 消息处理器（SYS-3/7、OUT-2、PIN-1、ADR 0028）：截图、设置面板、配置应用等。
+//! `App` 消息处理器（SYS-3、OUT-2、PIN-1、ADR 0028）：截图、设置面板、配置应用等。
 //! 从 `mod.rs` 拆出，控制单文件规模；入口 `run` 与窗口过程见 `super` 与 `super::wndproc`。
 
 use std::sync::atomic::Ordering;
@@ -118,11 +118,5 @@ impl App {
             cfg.pin_border = next;
             cfg.save();
         }
-    }
-
-    /// 启动后静默检查更新（SYS-7）：失败不打扰用户（国内网络下加速站挂掉是常态）。
-    pub fn check_update_silently(&mut self) {
-        let skipped = self.config.skipped_version.clone();
-        crate::update::check::check_in_background(skipped);
     }
 }

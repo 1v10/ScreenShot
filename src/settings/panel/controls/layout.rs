@@ -6,7 +6,7 @@ use crate::overlay::geometry::SelRect;
 
 use super::{
     CELL_PAD, CELLPAD, CLEAR_BTN, CONTENT_HEADER_H, GRID_GAP, GROUP_H, H, HOVER_PAD, Item, KEY_ROWS, Layout, NAV_H,
-    NAV_W, PAD, QR_ROW_H, ROW_H, Row, RowId, RowKind, Section, TOGGLE_W, W, ui_scale_row,
+    NAV_W, PAD, ROW_H, Row, RowId, RowKind, Section, TOGGLE_W, W, ui_scale_row,
 };
 use crate::settings::ToolbarGroup;
 
@@ -97,7 +97,7 @@ fn mk_cell(id: RowId, label: &'static str, x: i32, y: i32, w: i32, s: f32) -> Ro
     }
 }
 
-/// 高行：高度按内容给（支持项目块 / 组头），几何与标准行一致。
+/// 高行：高度按内容给（组头），几何与标准行一致。
 fn mk_row_tall(id: RowId, kind: RowKind, label: &'static str, y: i32, s: f32, h: i32) -> Row {
     let mut row = mk_row(id, kind, label, y, s);
     row.rect.h = h;
@@ -239,15 +239,6 @@ fn section_rows(section: Section, y0: i32, s: f32, items: &mut Vec<Item>) {
             for m in crate::settings::UiScale::ALL {
                 push(ui_scale_row(m), RowKind::Radio, m.title(), &mut y, items);
             }
-        }
-        Section::About => {
-            push(RowId::About, RowKind::About, "AirSnip 轻截", &mut y, items);
-            push(RowId::Repo, RowKind::Link, "项目地址", &mut y, items);
-            push(RowId::Licenses, RowKind::Link, "第三方许可", &mut y, items);
-            push(RowId::CheckUpdate, RowKind::Button, "版本更新", &mut y, items);
-            push(RowId::AutoCheckUpdate, RowKind::Toggle, "启动时自动检查", &mut y, items);
-            let qh = (QR_ROW_H as f32 * s) as i32;
-            items.push(Item::Row(mk_row_tall(RowId::Reward, RowKind::Qr, "支持项目", y, s, qh)));
         }
     }
 }

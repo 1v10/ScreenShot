@@ -258,13 +258,13 @@ pub fn run(capture: CapturedScreen, opts: OverlayOpts, hinstance: HINSTANCE, mai
         let _ = PostMessageW(Some(hwnd), wndproc::WM_FOCUS_OVERLAY, WPARAM(0), LPARAM(0));
         if crate::perf::enabled() {
             eprintln!(
-                "[airsnip] 显示分解：建窗+初始化 {:?}，SetWindowPos {pos:?}，首帧 {paint:?}，前台+焦点 {:?}",
+                "[screentrans] 显示分解：建窗+初始化 {:?}，SetWindowPos {pos:?}，首帧 {paint:?}，前台+焦点 {:?}",
                 t_init_done - t_win,
                 t_pos.elapsed() - pos - paint
             );
         }
-        if std::env::var_os("AIRSNIP_TIMING").is_some() {
-            eprintln!("[airsnip] 覆盖层创建到显示完成 {:?}", t_show.elapsed());
+        if std::env::var_os("SCREENTRANS_TIMING").is_some() {
+            eprintln!("[screentrans] 覆盖层创建到显示完成 {:?}", t_show.elapsed());
         }
         // M5 性能剖析：热键 → 可见总耗时（含抓屏、线程创建与首帧绘制）
         crate::perf::log_overlay_shown();

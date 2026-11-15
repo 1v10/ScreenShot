@@ -1,10 +1,11 @@
-# 打包发布（M5）：构建 release → 校验图标/体积 → 输出 dist\airsnip-v{版本}-win-x64.zip
+﻿# 打包发布（M5）：构建 release → 校验图标/体积 → 输出 dist\ScreenTrans-v{版本}-win-x64.zip
 # 用法：pwsh -File scripts/package.ps1                    # 完整构建 + 打包
 #       pwsh -File scripts/package.ps1 -SkipBuild        # 复用已有 release 产物
 #       pwsh -File scripts/package.ps1 -Suffix 20261113  # 加后缀区分测试包（不影响版本号）
 param([switch]$SkipBuild, [string]$Suffix = "")
 
 $ErrorActionPreference = 'Stop'
+if ($Suffix -and $Suffix -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') { throw "后缀只能包含字母、数字、点、下划线和连字符" }
 
 # 读取 PE 导入表（仅支持 PE32+ / x64），返回 exe 直接依赖的 DLL 名。
 # 用途：打包前守门，确认 exe 没有动态依赖 VC 运行时（ADR 0021）。
@@ -83,30 +84,36 @@ Set-Location $root
 $m = Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1
 if (-not $m) { throw "无法从 Cargo.toml 读取版本号" }
 $ver = $m.Matches[0].Groups[1].Value
-$name = "airsnip-v$ver-win-x64"
-# 测试包用后缀区分（issue 验证包）：版本号仍是当前 Cargo.toml 的，不会被自动更新覆盖
+$name = "ScreenTrans-v$ver-win-x64"
+# 测试包用后缀区分，版本号仍是当前 Cargo.toml 的。
 if ($Suffix) { $name = "$name-$Suffix" }
 Write-Host "版本：$ver"
 
 if (-not $SkipBuild) {
     Write-Host "构建 release ..."
-    cargo build --release
+    cargo build --release --locked
     if ($LASTEXITCODE -ne 0) { throw "cargo build --release 失败" }
 }
 
-$exe = Join-Path $root "target\release\airsnip.exe"
+$exe = Join-Path $root "target\release\ScreenTrans.exe"
 if (-not (Test-Path $exe)) { throw "找不到 $exe" }
 
 # 体积红线（PRD：≤5 MB）
 $sizeMb = (Get-Item $exe).Length / 1MB
 $verdict = if ($sizeMb -le 5) { "达标" } else { "超标" }
 Write-Host ("release 体积：{0:N2} MB（红线 ≤5 MB，{1}）" -f $sizeMb, $verdict)
+if ($sizeMb -gt 5) { throw "release 超过 5 MB" }
+$versionInfo = (Get-Item -LiteralPath $exe).VersionInfo
+if ($versionInfo.ProductName -ne 'ScreenTrans' -or $versionInfo.ProductVersion -ne $ver) {
+    throw "EXE 产品名/版本与 Cargo.toml 不一致，请重新构建：$($versionInfo.ProductName) $($versionInfo.ProductVersion)"
+}
 
 # 图标校验：资源段里嵌入的图标必须能取出来
 Add-Type -AssemblyName System.Drawing
 $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($exe)
 if (-not $icon) { throw "exe 未嵌入图标（app.rc 的 ICON 资源缺失？）" }
 Write-Host ("嵌入图标：{0}×{1}" -f $icon.Width, $icon.Height)
+$icon.Dispose()
 
 # CRT 依赖守门（ADR 0021）：exe 必须静态链接 VC 运行时，否则干净机器上
 # 双击会报「找不到 VCRUNTIME140.dll」。.cargo/config.toml 漏配或失效时在这里拦下。
@@ -118,9 +125,12 @@ if ($crtDeps) {
 }
 
 # 组装发布目录
-$dist = Join-Path $root "dist"
-$pkg = Join-Path $dist $name
-if (Test-Path $pkg) { Remove-Item $pkg -Recurse -Force }
+$dist = [IO.Path]::GetFullPath((Join-Path $root "dist"))
+$pkg = [IO.Path]::GetFullPath((Join-Path $dist $name))
+if (-not $pkg.StartsWith($dist + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "打包目录超出 dist：$pkg"
+}
+if (Test-Path -LiteralPath $pkg) { Remove-Item -LiteralPath $pkg -Recurse -Force }
 New-Item -ItemType Directory -Path $pkg -Force | Out-Null
 
 Copy-Item $exe $pkg
@@ -133,20 +143,22 @@ $zip = Join-Path $dist "$name.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
 Compress-Archive -Path (Join-Path $pkg "*") -DestinationPath $zip -CompressionLevel Optimal
 
-# 自动更新包（SYS-7）：裸 exe（自动更新只需替换 exe，不用解压 zip）
+# 独立运行文件：无需解压 zip 即可使用
 $updExe = Join-Path $dist "$name.exe"
 Copy-Item $exe $updExe -Force
 
 $zipMb = (Get-Item $zip).Length / 1MB
 $sha = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
 $exeSha = (Get-FileHash $updExe -Algorithm SHA256).Hash.ToLower()
+$checksumPath = Join-Path $dist "$name.sha256"
+$checksums = "$sha  $name.zip`n$exeSha  $name.exe`n"
+[IO.File]::WriteAllText($checksumPath, $checksums, [Text.UTF8Encoding]::new($false))
 Write-Host ""
 Write-Host "产物：dist\$name.zip（手动下载）"
-Write-Host "      dist\$name.exe（自动更新）"
+Write-Host "      dist\$name.exe（独立运行文件）"
+Write-Host "      dist\$name.sha256（SHA-256 校验和）"
 Write-Host ("体积：{0:N2} MB" -f $zipMb)
 Write-Host "zip SHA256：$sha"
 Write-Host "exe SHA256：$exeSha"
 Write-Host ""
-Write-Host "下一步："
-Write-Host "  1. gh release create v$ver `"dist\$name.zip`" `"dist\$name.exe`" --title `"AirSnip v$ver`" --notes-file <说明文件>"
-Write-Host "  2. pwsh -File scripts/gen-latest-json.ps1   # 生成并签名 latest.json，再上传到同一 Release"
+Write-Host "发布步骤见 docs/publishing.md；tag 与远程操作由维护者执行。"

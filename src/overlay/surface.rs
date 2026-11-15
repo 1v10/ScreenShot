@@ -79,7 +79,7 @@ impl super::Overlay {
 pub(super) fn draw_info_text(pixmap: &mut Pixmap, r: SelRect, sel: SelRect, ui: Ui) {
     let text = format!("{} × {}", sel.w, sel.h);
     // 字重加粗：16px 常规字重在暗底上偏细发灰，加粗后笔画更实且不刺眼。
-    let mut spec = FontSpec::new(info_font_size(ui));
+    let mut spec = FontSpec::ui(info_font_size(ui));
     spec.bold = true;
     let (_, th) = dwrite::measure(&text, &spec);
     let x = (r.x + info_pad_x(ui)) as f32;
