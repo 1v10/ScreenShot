@@ -1,16 +1,16 @@
-# ScreenTrans 开发指南
+# ScreenShot 开发指南
 
 ## 项目概览
 
 轻量原生截图与标注工具（Windows 11，Rust + windows-rs，纯 CPU 渲染），面向无独显迷你主机。目标：常驻 ≈0 开销、触发即用、框选/箭头/文本/高斯模糊/高亮标注、长截图、贴图。
 
-软件名 **ScreenTrans**：展示名及 EXE 为 `ScreenTrans` / `ScreenTrans.exe`；crate、配置目录、窗口类、互斥量和自启任务统一小写 `screentrans`。上游旧名 AirSnip；改名与配置兼容见 `docs/adr/0042-rename-screentrans-and-release-ci.md`。
+软件名 **ScreenShot**：展示名及 EXE 为 `ScreenShot` / `ScreenShot.exe`；crate、配置目录、窗口类、互斥量和自启任务统一小写 `screenshot`。兼容读取本截图项目旧名 ScreenTrans 与上游 AirSnip 的配置，见 `docs/adr/0044-rename-to-screenshot.md`。
 
 完整需求见 `screenshot-tool-PRD.md`，架构决策见 `docs/adr/`。
 
 ## 项目状态
 
-- **当前命名与发布（ADR 0042）**：当前 ScreenTrans 版本为 **v1.0.0**；展示名/EXE 为 ScreenTrans，crate 与配置目录为 screentrans，技术环境变量前缀 SCREENTRANS。本地构建入口 `scripts/build.ps1`，发布指南 `docs/publishing.md`；下方 AirSnip 名称、自动更新与旧发布命令仅是历史状态。用户明确要求由自己执行远程 Git 操作、tag、推送和发布触发；代理仅编辑本地配置并本地验证。
+- **当前命名与发布（ADR 0044）**：当前 ScreenShot 版本为 **v1.0.0**；展示名/EXE 为 ScreenShot，crate 与配置目录为 screenshot，技术环境变量前缀 SCREENSHOT。本地构建入口 `scripts/build.ps1`；下方 AirSnip 名称、自动更新与旧发布命令仅是历史状态。用户明确要求由自己执行远程 Git 操作、tag、推送和发布触发；代理仅编辑本地配置并本地验证。
 
 - **本地定制修订（ADR 0040）**：删除关于页及项目链接、在线许可入口、赞赏码、完整自动更新功能与更新开发工具；设置保留五页。发布包继续包含 LICENSE 与 THIRD-PARTY.md。截图/贴图编辑默认首个可见色块，全隐藏时颜色 1。历史更新 ADR 与发版记录仅供历史参考，不应据此恢复更新代码。
 

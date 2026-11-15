@@ -14,7 +14,7 @@ use windows::core::w;
 use crate::overlay::ui::Ui;
 
 /// 窗口类名。
-const CLASS: windows::core::PCWSTR = w!("screentrans.longshot.border");
+const CLASS: windows::core::PCWSTR = w!("screenshot.longshot.border");
 /// 边框厚度基准值（像素，经 `Ui` 缩放）。
 const EDGE_BASE: f32 = 2.0;
 /// 当前边框厚度（`spawn` 时按 DPI 算好，`draw` 读取；进程内同时只有一个长截图边框）。

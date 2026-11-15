@@ -48,12 +48,12 @@ impl App {
             uFlags: NIF_MESSAGE | NIF_ICON | NIF_TIP,
             uCallbackMessage: WM_TRAY,
             hIcon: unsafe { LoadIconW(Some(self.hinstance), icon_resource()).unwrap_or_default() },
-            szTip: wide_array("ScreenTrans"),
+            szTip: wide_array("ScreenShot"),
             ..Default::default()
         };
         let ok = unsafe { Shell_NotifyIconW(NIM_ADD, &nid) }.as_bool();
-        if !ok && std::env::var_os("SCREENTRANS_DEBUG").is_some() {
-            eprintln!("[screentrans] 托盘 NIM_ADD 失败，错误码 {:?}", unsafe {
+        if !ok && std::env::var_os("SCREENSHOT_DEBUG").is_some() {
+            eprintln!("[screenshot] 托盘 NIM_ADD 失败，错误码 {:?}", unsafe {
                 GetLastError()
             });
         }

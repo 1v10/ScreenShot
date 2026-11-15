@@ -68,7 +68,7 @@ pub(super) fn create_window(hinstance: HINSTANCE, panel: &mut Panel) -> Result<H
         let hwnd = CreateWindowExW(
             WINDOW_EX_STYLE(0),
             WINDOW_CLASS,
-            w!("ScreenTrans 设置"),
+            w!("ScreenShot 设置"),
             STYLE,
             cx,
             cy,

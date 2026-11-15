@@ -219,7 +219,7 @@ fn capture_virtual_screen_bitblt() -> Result<CapturedScreen, String> {
         };
 
         let _ = SelectObject(hdc_mem, hbmp.into());
-        let timing = std::env::var_os("SCREENTRANS_TIMING").is_some();
+        let timing = std::env::var_os("SCREENSHOT_TIMING").is_some();
         let t_blt = std::time::Instant::now();
         if BitBlt(
             hdc_mem,
@@ -249,7 +249,7 @@ fn capture_virtual_screen_bitblt() -> Result<CapturedScreen, String> {
         swap_rb_parallel(&mut rgba);
         let copy = t_copy.elapsed();
         if timing {
-            eprintln!("[screentrans] BitBlt {blt:?}，拷贝+交换 {copy:?}");
+            eprintln!("[screenshot] BitBlt {blt:?}，拷贝+交换 {copy:?}");
         }
 
         let _ = DeleteObject(hbmp.into());
@@ -263,8 +263,8 @@ fn capture_virtual_screen_bitblt() -> Result<CapturedScreen, String> {
             origin_y: vy,
             rgba,
         });
-        if std::env::var_os("SCREENTRANS_TIMING").is_some() {
-            eprintln!("[screentrans] 抓屏耗时 {:?}", t0.elapsed());
+        if std::env::var_os("SCREENSHOT_TIMING").is_some() {
+            eprintln!("[screenshot] 抓屏耗时 {:?}", t0.elapsed());
         }
         result
     }

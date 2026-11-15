@@ -31,12 +31,12 @@ BEGIN
   BEGIN
     BLOCK "040904b0"
     BEGIN
-      VALUE "FileDescription", "ScreenTrans\0"
+      VALUE "FileDescription", "ScreenShot\0"
       VALUE "FileVersion", "{version}\0"
-      VALUE "InternalName", "ScreenTrans\0"
+      VALUE "InternalName", "ScreenShot\0"
       VALUE "LegalCopyright", "GPL-3.0-only; based on AirSnip\0"
-      VALUE "OriginalFilename", "ScreenTrans.exe\0"
-      VALUE "ProductName", "ScreenTrans\0"
+      VALUE "OriginalFilename", "ScreenShot.exe\0"
+      VALUE "ProductName", "ScreenShot\0"
       VALUE "ProductVersion", "{version}\0"
     END
   END
@@ -48,9 +48,9 @@ END
 "#,
         root.join(rc).to_string_lossy().replace('\\', "/")
     );
-    let generated = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("screen-trans.rc");
-    std::fs::write(&generated, resource).expect("write ScreenTrans resource");
+    let generated = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap()).join("screen-shot.rc");
+    std::fs::write(&generated, resource).expect("write ScreenShot resource");
     embed_resource::compile(generated, embed_resource::NONE)
         .manifest_required()
-        .expect("embed ScreenTrans manifest, icon and version");
+        .expect("embed ScreenShot manifest, icon and version");
 }

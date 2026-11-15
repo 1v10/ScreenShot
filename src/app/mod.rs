@@ -25,8 +25,8 @@ use crate::settings::Config;
 use wndproc::create_message_window;
 
 /// 消息窗口类名（`FindWindowW` 唤起已有实例时用到）。
-pub const WINDOW_CLASS: PCWSTR = w!("screentrans.hidden");
-const MUTEX_NAME: PCWSTR = w!("Local\\screentrans.single.instance");
+pub const WINDOW_CLASS: PCWSTR = w!("screenshot.hidden");
+const MUTEX_NAME: PCWSTR = w!("Local\\screenshot.single.instance");
 const WM_TRAY: u32 = WM_APP + 1;
 const WM_ACTIVATE: u32 = WM_APP + 2; // 单实例唤起已有实例
 /// 覆盖层线程 → 主窗口：贴图载荷（GlobalAlloc: u32 w + u32 h + RGBA）（PIN-1）。
@@ -159,7 +159,7 @@ pub fn icon_resource() -> PCWSTR {
 /// `owner` 为 None 时使用当前活动窗口；`flags` 为 MB_* 组合。
 pub fn message_box(owner: Option<HWND>, text: &str, flags: MESSAGEBOX_STYLE) {
     let ws: Vec<u16> = text.encode_utf16().chain([0]).collect();
-    unsafe { MessageBoxW(owner, PCWSTR(ws.as_ptr()), w!("ScreenTrans"), flags) };
+    unsafe { MessageBoxW(owner, PCWSTR(ws.as_ptr()), w!("ScreenShot"), flags) };
 }
 
 /// 将字符串写入固定长度 u16 数组（用于 NOTIFYICONDATAW.szTip 等）。

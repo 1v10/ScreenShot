@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-//! 配置（SYS-5）：`%APPDATA%\screentrans\config.toml`，缺失或损坏时回退默认值。
+//! 配置（SYS-5）：`%APPDATA%\screenshot\config.toml`，缺失或损坏时回退默认值。
 
 pub mod hotkey;
 pub mod panel;
@@ -52,14 +52,14 @@ pub enum PinPosition {
 /// 保存文件名模板（OUT-2）：保存对话框预填的文件名，可在设置面板选择。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum NameStyle {
-    /// `screentrans-20241231-235959`（日期 + 时间，默认）。
+    /// `screenshot-20241231-235959`（日期 + 时间，默认）。
     #[default]
     #[serde(rename = "datetime")]
     DateTime,
     /// `1735689599123`（Unix 毫秒时间戳）。
     #[serde(rename = "timestamp")]
     Timestamp,
-    /// `screentrans-20241231`（仅日期）。
+    /// `screenshot-20241231`（仅日期）。
     #[serde(rename = "date")]
     Date,
 }
@@ -212,10 +212,10 @@ impl Default for Config {
 }
 
 impl Config {
-    /// 配置目录：`%APPDATA%\screentrans`。
+    /// 配置目录：`%APPDATA%\screenshot`。
     pub fn config_dir() -> PathBuf {
         let appdata = std::env::var("APPDATA").unwrap_or_else(|_| ".".to_string());
-        PathBuf::from(appdata).join("screentrans")
+        PathBuf::from(appdata).join("screenshot")
     }
 
     /// 配置文件路径。
@@ -223,10 +223,11 @@ impl Config {
         Self::config_dir().join("config.toml")
     }
 
-    /// 加载配置：新文件不存在时兼容旧 AirSnip 配置；损坏时回退默认值（SYS-5）。
+    /// 新文件缺失时依次读取旧 ScreenTrans / AirSnip 配置；损坏时回退默认值（SYS-5）。
     pub fn load() -> Self {
+        let previous = Self::config_dir().with_file_name("screentrans").join("config.toml");
         let legacy = Self::config_dir().with_file_name("airsnip").join("config.toml");
-        let mut cfg = Self::load_from_paths(&Self::config_path(), &legacy);
+        let mut cfg = Self::load_from_paths(&Self::config_path(), &[&previous, &legacy]);
         // 迁移：旧版共享 modifiers（同时作用于两键）→ 拆分到各键
         let h = &mut cfg.hotkey;
         if h.legacy_modifiers != 0 && h.screenshot_modifiers == 0 && h.pin_modifiers == 0 {
@@ -237,12 +238,14 @@ impl Config {
     }
 
     /// 显式路径便于验证迁移；新配置即使损坏，也不覆盖为旧偏好。
-    fn load_from_paths(current: &std::path::Path, legacy: &std::path::Path) -> Self {
-        let text = match std::fs::read_to_string(current) {
-            Ok(text) => Ok(text),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => std::fs::read_to_string(legacy),
-            Err(e) => Err(e),
-        };
+    fn load_from_paths(current: &std::path::Path, legacy: &[&std::path::Path]) -> Self {
+        let mut text = std::fs::read_to_string(current);
+        for path in legacy {
+            if !matches!(&text, Err(e) if e.kind() == std::io::ErrorKind::NotFound) {
+                break;
+            }
+            text = std::fs::read_to_string(path);
+        }
         text.ok()
             .and_then(|text| toml::from_str(&text).ok())
             .unwrap_or_default()
@@ -262,18 +265,29 @@ mod tests {
 
     #[test]
     fn renamed_config_uses_legacy_only_when_new_file_is_absent() {
-        let temp = std::env::temp_dir().join(format!("screentrans-config-{}", std::process::id()));
+        let temp = std::env::temp_dir().join(format!("screenshot-config-{}", std::process::id()));
         std::fs::create_dir_all(&temp).unwrap();
         let current = temp.join("new.toml");
         let legacy = temp.join("old.toml");
+        let oldest = temp.join("oldest.toml");
+        let fallbacks = [&legacy as &std::path::Path, &oldest as &std::path::Path];
+        std::fs::write(&oldest, "theme = \"light\"\n").unwrap();
         std::fs::write(&legacy, "theme = \"dark\"\n").unwrap();
-        assert_eq!(Config::load_from_paths(&current, &legacy).theme, ThemeSetting::Dark);
+        assert_eq!(Config::load_from_paths(&current, &fallbacks).theme, ThemeSetting::Dark);
         std::fs::write(&current, "theme = \"light\"\n").unwrap();
-        assert_eq!(Config::load_from_paths(&current, &legacy).theme, ThemeSetting::Light);
+        assert_eq!(Config::load_from_paths(&current, &fallbacks).theme, ThemeSetting::Light);
         std::fs::write(&current, "invalid = [").unwrap();
-        assert_eq!(Config::load_from_paths(&current, &legacy).theme, ThemeSetting::Follow);
+        assert_eq!(
+            Config::load_from_paths(&current, &fallbacks).theme,
+            ThemeSetting::Follow
+        );
         std::fs::remove_file(current).unwrap();
-        std::fs::remove_file(legacy).unwrap();
+        std::fs::remove_file(&legacy).unwrap();
+        assert_eq!(
+            Config::load_from_paths(&temp.join("new.toml"), &fallbacks).theme,
+            ThemeSetting::Light
+        );
+        std::fs::remove_file(oldest).unwrap();
         std::fs::remove_dir(temp).unwrap();
     }
 

@@ -31,7 +31,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
 fn main() {
     unsafe {
         let hinstance: HINSTANCE = GetModuleHandleW(None).expect("GetModuleHandleW").into();
-        let class = w!("screentrans.uia-hang");
+        let class = w!("screenshot.uia-hang");
         let wc = WNDCLASSW {
             lpfnWndProc: Some(wndproc),
             hInstance: hinstance,

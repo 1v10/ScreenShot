@@ -17,10 +17,10 @@ const BLOCK_FOR: Duration = Duration::from_secs(30);
 /// 超过它就判定这个窗口「慢」（实测无响应会卡 10 秒，这里只要一个保守的界）。
 const SLOW_MS: u64 = 1000;
 
-/// `SCREENTRANS_DEBUG=1` 时打一行调试日志（与仓库其它调试输出同一口径）。
+/// `SCREENSHOT_DEBUG=1` 时打一行调试日志（与仓库其它调试输出同一口径）。
 fn debug(msg: &str) {
     if crate::app::mouse::debug_enabled() {
-        eprintln!("[screentrans] uia: {msg}");
+        eprintln!("[screenshot] uia: {msg}");
     }
 }
 

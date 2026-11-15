@@ -149,7 +149,7 @@ fn confirm(owner: windows::Win32::Foundation::HWND, text: &str) -> bool {
         MessageBoxW(
             Some(owner),
             PCWSTR(ws.as_ptr()),
-            w!("ScreenTrans"),
+            w!("ScreenShot"),
             MB_YESNO | MB_ICONWARNING,
         ) == IDYES
     }

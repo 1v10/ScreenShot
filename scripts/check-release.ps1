@@ -17,6 +17,6 @@ if ([string]::IsNullOrWhiteSpace([IO.File]::ReadAllText((Join-Path $root $notes)
     throw "Empty release notes: $notes"
 }
 $isPrerelease = $version.Contains('-').ToString().ToLowerInvariant()
-$lines = @("version=$version", "prerelease=$isPrerelease", "notes=$notes", "asset_prefix=ScreenTrans-v$version-win-x64")
+$lines = @("version=$version", "prerelease=$isPrerelease", "notes=$notes", "asset_prefix=ScreenShot-v$version-win-x64")
 if ($env:GITHUB_OUTPUT) { $lines | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append }
 $lines | Write-Output

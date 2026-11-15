@@ -1,12 +1,12 @@
-# 性能采集（M5）：启动 ScreenTrans → 模拟 F1 截图 + 拖框绘制多帧 → 解析 SCREENTRANS_TIMING 日志。
+# 性能采集（M5）：启动 ScreenShot → 模拟 F1 截图 + 拖框绘制多帧 → 解析 SCREENSHOT_TIMING 日志。
 # 用法（需与目标程序同权限；release 版要管理员）：
 #   pwsh -File scripts/perf-capture.ps1                     # 默认 release
-#   pwsh -File scripts/perf-capture.ps1 -Exe .\target\debug\ScreenTrans.exe -Rounds 3
+#   pwsh -File scripts/perf-capture.ps1 -Exe .\target\debug\ScreenShot.exe -Rounds 3
 # 结果对照 PRD §6：热键→覆盖层 ≤150ms(1080p)/≤250ms(4K)，交互 ≥60FPS（每帧 ≤16.7ms）。
 param(
-    [string]$Exe = ".\target\release\ScreenTrans.exe",
+    [string]$Exe = ".\target\release\ScreenShot.exe",
     [int]$Rounds = 5,
-    [string]$LogPath = "$env:TEMP\screentrans-perf.log"
+    [string]$LogPath = "$env:TEMP\screenshot-perf.log"
 )
 $ErrorActionPreference = 'Stop'
 
@@ -47,17 +47,17 @@ function Wait-Gone([string]$cls, [int]$timeoutMs = 3000) {
 
 if (-not (Test-Path $Exe)) { throw "找不到可执行文件：$Exe" }
 $Exe = (Resolve-Path $Exe).Path
-$running = Get-Process screentrans -ErrorAction SilentlyContinue
-if ($running) { throw "ScreenTrans 已在运行（PID $($running.Id)），请先退出再采集" }
+$running = Get-Process screenshot -ErrorAction SilentlyContinue
+if ($running) { throw "ScreenShot 已在运行（PID $($running.Id)），请先退出再采集" }
 
-$env:SCREENTRANS_TIMING = "1"
+$env:SCREENSHOT_TIMING = "1"
 if (Test-Path $LogPath) { Remove-Item $LogPath -Force }
 Write-Host "启动 $Exe（日志：$LogPath）"
 $proc = Start-Process -FilePath $Exe -RedirectStandardError $LogPath -PassThru
 Start-Sleep -Seconds 2
 
-$hidden = Wait-Window "screentrans.hidden" 5000
-if ($hidden -eq [IntPtr]::Zero) { Stop-Process -Id $proc.Id -Force; throw "未找到隐藏主窗口 screentrans.hidden" }
+$hidden = Wait-Window "screenshot.hidden" 5000
+if ($hidden -eq [IntPtr]::Zero) { Stop-Process -Id $proc.Id -Force; throw "未找到隐藏主窗口 screenshot.hidden" }
 
 $sw = [P.W]::GetSystemMetrics(0)
 $sh = [P.W]::GetSystemMetrics(1)
@@ -69,7 +69,7 @@ $rx2 = [int]($sw * 0.55); $ry2 = [int]($sh * 0.60)
 
 for ($i = 1; $i -le $Rounds; $i++) {
     [void][P.W]::PostMessageW($hidden, $WM_HOTKEY, [IntPtr]101, [IntPtr]0)
-    $ov = Wait-Window "screentrans.overlay" 5000
+    $ov = Wait-Window "screenshot.overlay" 5000
     if ($ov -eq [IntPtr]::Zero) { Write-Warning "第 $i 轮：覆盖层未出现"; continue }
     Start-Sleep -Milliseconds 250
 
@@ -92,7 +92,7 @@ for ($i = 1; $i -le $Rounds; $i++) {
     Start-Sleep -Milliseconds 100
 
     [void][P.W]::PostMessageW($ov, $WM_KEYDOWN, [IntPtr]$VK_ESC, [IntPtr]0)
-    if (-not (Wait-Gone "screentrans.overlay" 3000)) { Write-Warning "第 $i 轮：Esc 后覆盖层未关闭" }
+    if (-not (Wait-Gone "screenshot.overlay" 3000)) { Write-Warning "第 $i 轮：Esc 后覆盖层未关闭" }
     Start-Sleep -Milliseconds 200
 }
 
@@ -128,7 +128,7 @@ Write-Host "==== 采集结果（$($shown.Count) 次截图）===="
 Write-Host ("抓屏耗时            : 平均 {0,6:N1} ms" -f (Avg $capture))
 Write-Host ("热键 → 覆盖层可见    : 平均 {0,6:N1} ms   最大 {1,6:N1} ms" -f (Avg $shown), (MaxOf $shown))
 Write-Host ("帧统计              : {0} 条" -f $frames.Count)
-foreach ($f in $frames) { Write-Host ("  " + $f.Line.Replace('[screentrans] ', '')) }
+foreach ($f in $frames) { Write-Host ("  " + $f.Line.Replace('[screenshot] ', '')) }
 Write-Host ""
 Write-Host "红线：热键→覆盖层 ≤150ms（1080p）/ ≤250ms（4K）；交互 ≥60FPS = 每帧 ≤16.7ms"
 Write-Host ""

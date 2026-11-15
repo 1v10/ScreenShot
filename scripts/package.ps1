@@ -1,4 +1,4 @@
-﻿# 打包发布（M5）：构建 release → 校验图标/体积 → 输出 dist\ScreenTrans-v{版本}-win-x64.zip
+﻿# 打包发布（M5）：构建 release → 校验图标/体积 → 输出 dist\ScreenShot-v{版本}-win-x64.zip
 # 用法：pwsh -File scripts/package.ps1                    # 完整构建 + 打包
 #       pwsh -File scripts/package.ps1 -SkipBuild        # 复用已有 release 产物
 #       pwsh -File scripts/package.ps1 -Suffix 20261113  # 加后缀区分测试包（不影响版本号）
@@ -84,7 +84,7 @@ Set-Location $root
 $m = Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1
 if (-not $m) { throw "无法从 Cargo.toml 读取版本号" }
 $ver = $m.Matches[0].Groups[1].Value
-$name = "ScreenTrans-v$ver-win-x64"
+$name = "ScreenShot-v$ver-win-x64"
 # 测试包用后缀区分，版本号仍是当前 Cargo.toml 的。
 if ($Suffix) { $name = "$name-$Suffix" }
 Write-Host "版本：$ver"
@@ -95,7 +95,7 @@ if (-not $SkipBuild) {
     if ($LASTEXITCODE -ne 0) { throw "cargo build --release 失败" }
 }
 
-$exe = Join-Path $root "target\release\ScreenTrans.exe"
+$exe = Join-Path $root "target\release\ScreenShot.exe"
 if (-not (Test-Path $exe)) { throw "找不到 $exe" }
 
 # 体积红线（PRD：≤5 MB）
@@ -104,7 +104,7 @@ $verdict = if ($sizeMb -le 5) { "达标" } else { "超标" }
 Write-Host ("release 体积：{0:N2} MB（红线 ≤5 MB，{1}）" -f $sizeMb, $verdict)
 if ($sizeMb -gt 5) { throw "release 超过 5 MB" }
 $versionInfo = (Get-Item -LiteralPath $exe).VersionInfo
-if ($versionInfo.ProductName -ne 'ScreenTrans' -or $versionInfo.ProductVersion -ne $ver) {
+if ($versionInfo.ProductName -ne 'ScreenShot' -or $versionInfo.ProductVersion -ne $ver) {
     throw "EXE 产品名/版本与 Cargo.toml 不一致，请重新构建：$($versionInfo.ProductName) $($versionInfo.ProductVersion)"
 }
 

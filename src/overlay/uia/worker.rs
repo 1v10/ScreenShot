@@ -189,7 +189,7 @@ fn build_cache(uia: &IUIAutomation) -> Option<IUIAutomationCacheRequest> {
 /// 从**目标窗口自己的元素树**往下找「包含光标的那个子元素」，返回「由深到浅」的层级矩形。
 ///
 /// 为什么不用 `ElementFromPoint`：它做的是**全局命中测试**，而截图覆盖层铺满屏幕且最上层，
-/// 于是一定先命中覆盖层自己（实测日志：`根进程 …(screentrans.overlay)`）——控件级永远不会生效。
+/// 于是一定先命中覆盖层自己（实测日志：`根进程 …(screenshot.overlay)`）——控件级永远不会生效。
 /// 从 `ElementFromHandle` 向下走则完全不依赖全局命中：覆盖层、全屏遮挡物都影响不到它。
 fn query(
     uia: &IUIAutomation,

@@ -1,12 +1,12 @@
 [package]
-name = "screentrans"
+name = "screenshot"
 version = "1.0.0"
 edition = "2024"
-description = "ScreenTrans：轻量原生截图与标注工具（Windows，纯 CPU 渲染）"
+description = "ScreenShot：轻量原生截图与标注工具（Windows，纯 CPU 渲染）"
 license = "GPL-3.0-only"
 
 [[bin]]
-name = "ScreenTrans"
+name = "ScreenShot"
 path = "src/main.rs"
 
 [profile.release]

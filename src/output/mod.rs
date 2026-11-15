@@ -140,18 +140,18 @@ pub fn save_jpeg(pixmap: &Pixmap, path: &Path) -> Result<(), String> {
     .map_err(|e| format!("JPEG 编码失败：{e}"))
 }
 
-/// 默认保存目录：`%USERPROFILE%\Pictures\screentrans`。
+/// 默认保存目录：`%USERPROFILE%\Pictures\screenshot`。
 pub fn default_save_dir() -> PathBuf {
     let home = std::env::var("USERPROFILE").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home).join("Pictures").join("screentrans")
+    PathBuf::from(home).join("Pictures").join("screenshot")
 }
 
-/// 生成时间戳文件名，如 `screentrans-20240101-120000.png`。
+/// 生成时间戳文件名，如 `screenshot-20240101-120000.png`。
 pub fn timestamped_filename(ext: &str) -> String {
     use windows::Win32::System::SystemInformation::GetLocalTime;
     let st = unsafe { GetLocalTime() };
     format!(
-        "screentrans-{:04}{:02}{:02}-{:02}{:02}{:02}.{ext}",
+        "screenshot-{:04}{:02}{:02}-{:02}{:02}{:02}.{ext}",
         st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond
     )
 }
@@ -185,10 +185,10 @@ pub fn base_name(style: crate::settings::NameStyle) -> String {
             let st = unsafe { GetLocalTime() };
             let (y, mo, d) = (st.wYear, st.wMonth, st.wDay);
             if let NameStyle::Date = style {
-                format!("screentrans-{y:04}{mo:02}{d:02}")
+                format!("screenshot-{y:04}{mo:02}{d:02}")
             } else {
                 let (h, mi, s) = (st.wHour, st.wMinute, st.wSecond);
-                format!("screentrans-{y:04}{mo:02}{d:02}-{h:02}{mi:02}{s:02}")
+                format!("screenshot-{y:04}{mo:02}{d:02}-{h:02}{mi:02}{s:02}")
             }
         }
     }
@@ -249,16 +249,16 @@ mod tests {
     fn base_name_matches_templates() {
         use crate::settings::NameStyle;
         let dt = base_name(NameStyle::DateTime);
-        assert!(dt.starts_with("screentrans-"), "{dt}");
-        assert_eq!(dt.len(), "screentrans-20241231-235959".len(), "{dt}");
+        assert!(dt.starts_with("screenshot-"), "{dt}");
+        assert_eq!(dt.len(), "screenshot-20241231-235959".len(), "{dt}");
         // Unix 毫秒：纯数字、13 位（当前纪元）、且单调递增
         let ts = base_name(NameStyle::Timestamp);
         assert!(ts.chars().all(|c| c.is_ascii_digit()), "时间戳应为纯数字：{ts}");
         assert_eq!(ts.len(), 13, "时间戳应为 13 位毫秒：{ts}");
         assert!(base_name(NameStyle::Timestamp) >= ts, "时间戳不应倒退");
         let d = base_name(NameStyle::Date);
-        assert!(d.starts_with("screentrans-"), "{d}");
-        assert_eq!(d.len(), "screentrans-20241231".len(), "{d}");
+        assert!(d.starts_with("screenshot-"), "{d}");
+        assert_eq!(d.len(), "screenshot-20241231".len(), "{d}");
     }
 
     /// save_file 只接受三种扩展名：其余报错，避免内容与扩展名不符（OUT-2）。
@@ -270,7 +270,7 @@ mod tests {
             assert!(save_file(&pixmap, &dir.join(bad)).is_err(), "{bad} 应被拒绝");
         }
         for name in ["out.png", "out.jpg", "out.webp"] {
-            let path = dir.join(format!("screentrans-test-{name}"));
+            let path = dir.join(format!("screenshot-test-{name}"));
             let r = save_file(&pixmap, &path);
             assert!(r.is_ok(), "{name} 应写入成功：{r:?}");
             let _ = std::fs::remove_file(&path);

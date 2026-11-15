@@ -27,7 +27,7 @@ pub(super) const HOTKEY_ID: i32 = 201;
 
 /// 注册「再次截图」键（默认 `Shift+F1`）。
 /// 失败静默：这只是截图期间的便利键，被别的程序占用时退化成「取消后重新按截图键」，
-/// 不该弹框打断正在进行的截图（`SCREENTRANS_DEBUG=1` 时打印一行）。
+/// 不该弹框打断正在进行的截图（`SCREENSHOT_DEBUG=1` 时打印一行）。
 pub(super) fn register(hwnd: HWND, key: u32, modifiers: u32) {
     // 未绑定（0）与鼠标键（RegisterHotKey 不支持，ADR 0019）都不注册
     if key == crate::settings::UNBOUND || crate::app::mouse::is_mouse_key(key) {
@@ -36,7 +36,7 @@ pub(super) fn register(hwnd: HWND, key: u32, modifiers: u32) {
     let ok = unsafe { RegisterHotKey(Some(hwnd), HOTKEY_ID, crate::app::hotkey::mod_flags(modifiers), key) }.is_ok();
     if !ok && crate::app::mouse::debug_enabled() {
         eprintln!(
-            "[screentrans] 再次截图键注册失败（{key:#x} + {modifiers}）：{}",
+            "[screenshot] 再次截图键注册失败（{key:#x} + {modifiers}）：{}",
             unsafe { windows::Win32::Foundation::GetLastError().0 }
         );
     }

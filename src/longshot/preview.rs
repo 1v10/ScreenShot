@@ -35,7 +35,7 @@ const MIN_H_BASE: f32 = 120.0;
 const PAD_BASE: f32 = 6.0;
 
 /// 窗口类名。
-const CLASS: windows::core::PCWSTR = w!("screentrans.longshot.preview");
+const CLASS: windows::core::PCWSTR = w!("screenshot.longshot.preview");
 
 /// 预览窗。
 pub struct Preview {

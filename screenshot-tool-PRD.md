@@ -285,6 +285,6 @@ theme/      系统主题检测与调色板
 
 当前行为修订（ADR 0040）：截图与贴图编辑初始化默认选择首个可见颜色；全部色块隐藏时选择颜色 1。关于页、赞赏入口、项目链接及自动更新功能已撤销。
 
-界面字体（SYS-3 / ADR 0041）：Segoe UI 优先，缺字时依次回退 Microsoft YaHei 和系统字体，与 ScreenTrans 保持相同字体顺序；标注对象字体独立可选。
+界面字体（SYS-3 / ADR 0041）：Segoe UI 优先，缺字时依次回退 Microsoft YaHei 和系统字体，与 ScreenShot 保持相同字体顺序；标注对象字体独立可选。
 
-命名与发布（SYS-1/4/5，ADR 0042 / 0043）：当前软件名 ScreenTrans，程序 ScreenTrans.exe，配置 %APPDATA%\screentrans；兼容读取旧 AirSnip 配置。日常直接在 main 开发，普通提交/分支推送不触发构建；用户推送与 Cargo 版本一致的 v* tag 后自动构建并发布，另保留手动构建按钮。tag 与远程 Git 操作由用户执行。历史需求中的 AirSnip 为上游旧名。
+命名与发布（SYS-1/4/5，ADR 0042 / 0043）：当前软件名 ScreenShot，程序 ScreenShot.exe，配置 %APPDATA%\screenshot；兼容读取旧 AirSnip 配置。日常直接在 main 开发，普通提交/分支推送不触发构建；用户推送与 Cargo 版本一致的 v* tag 后自动构建并发布，另保留手动构建按钮。tag 与远程 Git 操作由用户执行。历史需求中的 AirSnip 为上游旧名。

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="1.0.0.0" processorArchitecture="*" name="screentrans" type="win32"/>
+  <assemblyIdentity version="1.0.0.0" processorArchitecture="*" name="screenshot" type="win32"/>
   <description>轻量原生截图与标注工具</description>
   <!-- 通用控件 v6：系统对话框（MessageBox 等）与原生控件使用 Win10/11 视觉样式，否则回退经典样式（issue #120） -->
   <dependency>
